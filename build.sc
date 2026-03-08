@@ -1,6 +1,7 @@
 import mill._
 import mill.scalalib._
 import mill.scalajslib._
+import mill.scalajslib.api._
 import mill.scalanativelib._
 import mill.scalalib.scalafmt.ScalafmtModule
 import mill.scalalib.publish._
@@ -65,7 +66,20 @@ trait JvmStreamsJvmModule extends CrossScalaModule with JvmStreamsModule {
 
 object coreJS extends Cross[CoreJsModule](scalaVersions)
 trait CoreJsModule extends CrossScalaModule with CoreModule with ScalaJSModule {
-  def scalaJSVersion = "1.17.0"
+  def scalaJSVersion = "1.20.0"
+  object test extends ScalaJSTests with TestModule.Munit {
+    def ivyDeps = Agg(ivy"org.scalameta::munit::1.0.3")
+  }
+}
+
+// ─── Scala.js WASM ──────────────────────────────────────────────────────────
+
+object coreWASM extends Cross[CoreWasmModule](scalaVersions)
+trait CoreWasmModule extends CrossScalaModule with CoreModule with ScalaJSModule {
+  def scalaJSVersion = "1.20.0"
+  override def moduleKind = ModuleKind.ESModule
+  override def moduleSplitStyle = ModuleSplitStyle.FewestModules
+  override def scalaJSExperimentalUseWebAssembly = true
   object test extends ScalaJSTests with TestModule.Munit {
     def ivyDeps = Agg(ivy"org.scalameta::munit::1.0.3")
   }
@@ -75,7 +89,7 @@ trait CoreJsModule extends CrossScalaModule with CoreModule with ScalaJSModule {
 
 object coreNative extends Cross[CoreNativeModule](scalaVersions)
 trait CoreNativeModule extends CrossScalaModule with CoreModule with ScalaNativeModule {
-  def scalaNativeVersion = "0.5.5"
+  def scalaNativeVersion = "0.5.10"
   object test extends ScalaNativeTests with TestModule.Munit {
     def ivyDeps = Agg(ivy"org.scalameta::munit::1.0.3")
   }
