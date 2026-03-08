@@ -84,10 +84,8 @@ class DeflaterOutputStream(out: OutputStream, val deflater: Deflater, size: Int,
   protected var mydeflater: Boolean = false
 
   /**
-   * Creates a `DeflaterOutputStream` with default compression level and buffer size (512 bytes).
-   *
-   * @param out
-   *   underlying output stream
+   * Creates a `DeflaterOutputStream` with zlib wrapping (RFC 1950), `Z_DEFAULT_COMPRESSION`, a 512-byte buffer, and
+   * syncFlush disabled. Closes the underlying stream on [[close()]].
    */
   def this(out: OutputStream) = {
     this(out, new Deflater(JZlib.Z_DEFAULT_COMPRESSION), DeflaterOutputStream.DEFAULT_BUFSIZE, true)
@@ -95,25 +93,15 @@ class DeflaterOutputStream(out: OutputStream, val deflater: Deflater, size: Int,
   }
 
   /**
-   * Creates a `DeflaterOutputStream` with the given deflater and default buffer size (512 bytes).
-   *
-   * @param out
-   *   underlying output stream
-   * @param deflater
-   *   the [[Deflater]] to use
+   * Creates a `DeflaterOutputStream` with a 512-byte buffer and syncFlush disabled. Wrapper type and compression level
+   * are determined by the supplied [[Deflater]].
    */
   def this(out: OutputStream, deflater: Deflater) =
     this(out, deflater, DeflaterOutputStream.DEFAULT_BUFSIZE, true)
 
   /**
-   * Creates a `DeflaterOutputStream` with the given deflater and buffer size.
-   *
-   * @param out
-   *   underlying output stream
-   * @param deflater
-   *   the [[Deflater]] to use
-   * @param size
-   *   internal buffer size in bytes
+   * Creates a `DeflaterOutputStream` with the given buffer size and syncFlush disabled. Wrapper type and compression
+   * level are determined by the supplied [[Deflater]].
    */
   def this(out: OutputStream, deflater: Deflater, size: Int) =
     this(out, deflater, size, true)

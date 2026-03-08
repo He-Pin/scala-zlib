@@ -66,16 +66,8 @@ class GZIPOutputStream(out: OutputStream, deflater: Deflater, size: Int, close_o
     extends DeflaterOutputStream(out, deflater, size, close_out) {
 
   /**
-   * Creates a `GZIPOutputStream` with the given buffer size and close behavior.
-   *
-   * A [[Deflater]] configured for GZIP wrapping is created automatically.
-   *
-   * @param out
-   *   underlying output stream
-   * @param size
-   *   internal buffer size in bytes
-   * @param close_out
-   *   whether [[close()]] should also close the underlying stream
+   * Creates a `GZIPOutputStream` with GZIP wrapping (RFC 1952), `Z_DEFAULT_COMPRESSION`, and the given buffer size. Set
+   * `close_out` to control whether [[close()]] closes the underlying stream.
    */
   def this(out: OutputStream, size: Int, close_out: Boolean) = {
     this(out, new Deflater(Z_DEFAULT_COMPRESSION, 15 + 16), size, close_out)
@@ -83,21 +75,15 @@ class GZIPOutputStream(out: OutputStream, deflater: Deflater, size: Int, close_o
   }
 
   /**
-   * Creates a `GZIPOutputStream` with the given buffer size. The underlying stream is closed on [[close()]].
-   *
-   * @param out
-   *   underlying output stream
-   * @param size
-   *   internal buffer size in bytes
+   * Creates a `GZIPOutputStream` with GZIP wrapping (RFC 1952), `Z_DEFAULT_COMPRESSION`, and the given buffer size.
+   * Closes the underlying stream on [[close()]].
    */
   def this(out: OutputStream, size: Int) =
     this(out, size, true)
 
   /**
-   * Creates a `GZIPOutputStream` with the default buffer size (512 bytes).
-   *
-   * @param out
-   *   underlying output stream
+   * Creates a `GZIPOutputStream` with GZIP wrapping (RFC 1952), `Z_DEFAULT_COMPRESSION`, and a 512-byte buffer. Closes
+   * the underlying stream on [[close()]].
    */
   def this(out: OutputStream) =
     this(out, DeflaterOutputStream.DEFAULT_BUFSIZE)

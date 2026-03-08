@@ -87,45 +87,30 @@ class InflaterInputStream(in: InputStream,
 
   private val byte1: Array[Byte] = new Array[Byte](1)
 
-  /** Creates an `InflaterInputStream` with the default buffer size (512 bytes).
-    *
-    * @param in
-    *   underlying input stream containing compressed data
-    * @param nowrap
-    *   if `true`, decompress raw DEFLATE data without a zlib header/trailer
+  /** Creates an `InflaterInputStream` with a 512-byte buffer.
+    * If `nowrap` is `true`, expects raw DEFLATE data (no header/trailer);
+    * otherwise expects zlib-wrapped data (RFC 1950). Returns -1 at end of stream.
     */
   def this(in: InputStream, nowrap: Boolean) = {
     this(in, new Inflater(nowrap), InflaterInputStream.DEFAULT_BUFSIZE, true)
     myinflater = true
   }
 
-  /** Creates an `InflaterInputStream` expecting zlib-wrapped data with the default buffer size.
-    *
-    * @param in
-    *   underlying input stream containing compressed data
+  /** Creates an `InflaterInputStream` expecting zlib-wrapped data (RFC 1950) with a 512-byte
+    * buffer. Closes the underlying stream on [[close()]]. Returns -1 at end of stream.
     */
   def this(in: InputStream) = {
     this(in, false)
   }
 
-  /** Creates an `InflaterInputStream` with the given inflater and default buffer size (512 bytes).
-    *
-    * @param in
-    *   underlying input stream
-    * @param inflater
-    *   the [[Inflater]] to use
+  /** Creates an `InflaterInputStream` with a 512-byte buffer.
+    * Wrapper type is determined by the supplied [[Inflater]]. Returns -1 at end of stream.
     */
   def this(in: InputStream, inflater: Inflater) =
     this(in, inflater, InflaterInputStream.DEFAULT_BUFSIZE, true)
 
-  /** Creates an `InflaterInputStream` with the given inflater and buffer size.
-    *
-    * @param in
-    *   underlying input stream
-    * @param inflater
-    *   the [[Inflater]] to use
-    * @param size
-    *   internal buffer size in bytes
+  /** Creates an `InflaterInputStream` with the given buffer size.
+    * Wrapper type is determined by the supplied [[Inflater]]. Returns -1 at end of stream.
     */
   def this(in: InputStream, inflater: Inflater, size: Int) =
     this(in, inflater, size, true)
