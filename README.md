@@ -31,16 +31,16 @@
 | GZIP format | ✅ | ✅ | ✅ | ✅ |
 | Adler-32 / CRC-32 | ✅ | ✅ | ✅ | ✅ |
 | Preset dictionary | ✅ | ✅ | ✅ | ✅ |
-| DeflaterOutputStream | ✅ | ❌ | ❌ | ❌ |
-| InflaterInputStream | ✅ | ❌ | ❌ | ❌ |
-| GZIPOutputStream | ✅ | ❌ | ❌ | ❌ |
-| GZIPInputStream | ✅ | ❌ | ❌ | ❌ |
-| ZOutputStream (legacy) | ✅ | ❌ | ❌ | ❌ |
-| ZInputStream (legacy) | ✅ | ❌ | ❌ | ❌ |
+| DeflaterOutputStream | ✅ | ✅ | ✅ | ✅ |
+| InflaterInputStream | ✅ | ✅ | ✅ | ✅ |
+| GZIPOutputStream | ✅ | ✅ | ✅ | ✅ |
+| GZIPInputStream | ✅ | ✅ | ✅ | ✅ |
+| ZOutputStream (legacy) | ✅ | ✅ | ✅ | ✅ |
+| ZInputStream (legacy) | ✅ | ✅ | ✅ | ✅ |
 
 **Requirements**: Java 17+ · Scala 2.13.16 or 3.3.7 · Scala.js 1.20.0 · Scala Native 0.5.10
 
-Stream classes are in the `jvm` module and extend `java.io` streams. For JS/Native/WASM, use `Deflater` and `Inflater` directly from the `core` module and manage your own byte buffers.
+All classes are available on all platforms. Stream classes extend `java.io.FilterInputStream`/`java.io.FilterOutputStream`, which are supported across JVM, Scala.js, Scala Native, and WASM.
 
 ## Upstream Project
 
@@ -54,7 +54,7 @@ The upstream source is tracked as a git submodule at `references/jzlib`. Each co
 
 - **Deflate / Inflate**: all compression levels (0–9), all flush modes (`Z_NO_FLUSH`, `Z_PARTIAL_FLUSH`, `Z_SYNC_FLUSH`, `Z_FULL_FLUSH`, `Z_FINISH`)
 - **GZIP format**: read and write RFC 1952 GZIP streams including headers
-- **Streaming API**: `DeflaterOutputStream`, `InflaterInputStream`, `GZIPOutputStream`, `GZIPInputStream` (JVM only)
+- **Streaming API**: `DeflaterOutputStream`, `InflaterInputStream`, `GZIPOutputStream`, `GZIPInputStream` (all platforms)
 - **Checksums**: Adler-32 and CRC-32, with combine operations
 - **Preset dictionaries**: full support for zlib dictionary-based compression
 - **Cross-platform**: JVM, Scala.js, Scala Native, WASM — no JNI, no native dependencies
@@ -63,35 +63,27 @@ The upstream source is tracked as a git submodule at `references/jzlib`. Each co
 
 ```
 scala-zlib/
-├── core/    Cross-platform zlib algorithm — JVM, JS, Native, WASM
-│            NO java.io dependencies allowed here.
-└── jvm/     JVM-only stream wrappers (extends java.io.Filter* streams)
-             Depends on core.
+├── core/    All classes — algorithm + stream wrappers — JVM, JS, Native, WASM
+└── jvm/     Test-only — JVM interop tests (compares with java.util.zip)
 ```
 
-- **`core`** — Pure algorithm (`Deflater`, `Inflater`, `Adler32`, `CRC32`, `GZIPHeader`). Compiles on all platforms.
-- **`jvm`** — `java.io` stream wrappers (`DeflaterOutputStream`, `InflaterInputStream`, `GZIPOutputStream`, `GZIPInputStream`). JVM only.
+- **`core`** — All classes: algorithm (`Deflater`, `Inflater`, `Adler32`, `CRC32`, `GZIPHeader`) and stream wrappers (`DeflaterOutputStream`, `InflaterInputStream`, `GZIPOutputStream`, `GZIPInputStream`). Compiles on all platforms.
+- **`jvm`** — Test-only. JVM interop tests that compare scala-zlib output with `java.util.zip`.
 
 ## Installation
 
 ### Mill
 
 ```scala
-// Core algorithm — JVM, JS, Native, WASM
+// All platforms — JVM, JS, Native, WASM
 def ivyDeps = Agg(ivy"com.github.scala-zlib::scala-zlib-core::1.1.5")
-
-// JVM stream wrappers (includes core)
-def ivyDeps = Agg(ivy"com.github.scala-zlib::scala-zlib-jvm::1.1.5")
 ```
 
 ### sbt
 
 ```scala
-// Core algorithm — JVM, JS, Native, WASM
+// All platforms — JVM, JS, Native, WASM
 libraryDependencies += "com.github.scala-zlib" %%% "scala-zlib-core" % "1.1.5"
-
-// JVM stream wrappers (includes core)
-libraryDependencies += "com.github.scala-zlib" %% "scala-zlib-jvm" % "1.1.5"
 ```
 
 ## Quick Start
@@ -129,7 +121,7 @@ inflater.end()
 println(result) // hello, hello!
 ```
 
-### GZIP with Streams (JVM only)
+### GZIP with Streams
 
 ```scala
 import com.jcraft.jzlib._
@@ -147,7 +139,7 @@ val bytes = gzIn.readAllBytes()
 println(new String(bytes)) // hello, world!
 ```
 
-### DeflaterOutputStream / InflaterInputStream (JVM only)
+### DeflaterOutputStream / InflaterInputStream
 
 ```scala
 import com.jcraft.jzlib._
@@ -206,7 +198,7 @@ inflater.init()
 
 ## Cross-Platform Usage
 
-On Scala.js, Scala Native, and WASM, use only the `core` module:
+All classes work on every platform. Here is a low-level example using `Deflater`/`Inflater` directly:
 
 ```scala
 // Works on all platforms
@@ -256,7 +248,7 @@ def decompress(data: Array[Byte], maxLen: Int = 65536): Array[Byte] = {
 | `Deflate` | Internal deflate algorithm (not part of public API) |
 | `Inflate` | Internal inflate algorithm (not part of public API) |
 
-### `jvm` module — JVM only
+### Stream wrappers (also in `core` — all platforms)
 
 | Class | Description |
 |-------|-------------|
@@ -289,7 +281,7 @@ def decompress(data: Array[Byte], maxLen: Int = 65536): Array[Byte] = {
 # ── Compile ──────────────────────────────────────────────────────────────────
 ./mill core[2.13.16].compile         # JVM, Scala 2.13
 ./mill core[3.3.7].compile           # JVM, Scala 3
-./mill jvm[2.13.16].compile          # JVM stream wrappers
+./mill jvm[2.13.16].compile          # JVM interop tests module
 ./mill coreJS[2.13.16].compile       # Scala.js
 ./mill coreNative[2.13.16].compile   # Scala Native
 ./mill coreWASM[2.13.16].compile     # WASM (experimental)
@@ -297,7 +289,7 @@ def decompress(data: Array[Byte], maxLen: Int = 65536): Array[Byte] = {
 
 # ── Test ─────────────────────────────────────────────────────────────────────
 ./mill core[2.13.16].test            # JVM
-./mill jvm[2.13.16].test             # JVM stream wrappers
+./mill jvm[2.13.16].test             # JVM interop tests
 ./mill coreJS[2.13.16].test          # Scala.js (requires Node.js)
 ./mill coreNative[2.13.16].test      # Scala Native (requires Clang/LLVM)
 ./mill coreWASM[2.13.16].test        # WASM (requires Node.js)

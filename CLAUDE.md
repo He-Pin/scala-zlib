@@ -18,15 +18,13 @@ scala-zlib is a pure Scala port of [jzlib](https://github.com/jruby/jzlib), a Ja
 
 ```
 scala-zlib/
-├── core/    Cross-platform zlib algorithm — JVM, JS, Native, WASM
-│            NO java.io dependencies allowed here.
-└── jvm/     JVM-only stream wrappers (extends java.io.Filter* streams)
-             Depends on core.
+├── core/    All classes — algorithm + stream wrappers — JVM, JS, Native, WASM
+└── jvm/     Test-only — JVM interop tests (compares with java.util.zip)
 ```
 
 ### Package: `com.jcraft.jzlib`
 
-Both modules use the same package name. The `core` module provides the algorithm; the `jvm` module provides stream wrappers for the JVM.
+The `core` module provides all classes (algorithm + stream wrappers). The `jvm` module contains only JVM interop tests.
 
 ### Key Classes
 
@@ -48,12 +46,12 @@ Both modules use the same package name. The `core` module provides the algorithm
 | `GZIPHeader` | core | GZIP header metadata (OS, filename, comment, mtime) |
 | `GZIPException` | core | Thrown on GZIP format errors — extends `Exception`, NOT `IOException` |
 | `ZStreamException` | core | Thrown on zlib stream errors — extends `Exception`, NOT `IOException` |
-| `DeflaterOutputStream` | jvm | Compressing `FilterOutputStream` |
-| `InflaterInputStream` | jvm | Decompressing `FilterInputStream` |
-| `GZIPOutputStream` | jvm | GZIP-format `DeflaterOutputStream` |
-| `GZIPInputStream` | jvm | GZIP-format `InflaterInputStream` |
-| `ZOutputStream` | jvm | Legacy compressing stream — **deprecated** |
-| `ZInputStream` | jvm | Legacy decompressing stream — **deprecated** |
+| `DeflaterOutputStream` | core | Compressing `FilterOutputStream` |
+| `InflaterInputStream` | core | Decompressing `FilterInputStream` |
+| `GZIPOutputStream` | core | GZIP-format `DeflaterOutputStream` |
+| `GZIPInputStream` | core | GZIP-format `InflaterInputStream` |
+| `ZOutputStream` | core | Legacy compressing stream — **deprecated** |
+| `ZInputStream` | core | Legacy decompressing stream — **deprecated** |
 
 ## Build System: Mill 0.12.11
 
@@ -61,11 +59,11 @@ Both modules use the same package name. The `core` module provides the algorithm
 
 | Module | Platforms | Description |
 |--------|-----------|-------------|
-| `core` | JVM | Cross-platform algorithm (JVM build) |
-| `coreJS` | Scala.js | Cross-platform algorithm (JS build) |
-| `coreNative` | Scala Native | Cross-platform algorithm (Native build) |
-| `coreWASM` | WASM | Cross-platform algorithm (WASM build, experimental) |
-| `jvm` | JVM | JVM-only `java.io` stream wrappers |
+| `core` | JVM | All classes — algorithm + stream wrappers (JVM build) |
+| `coreJS` | Scala.js | All classes — algorithm + stream wrappers (JS build) |
+| `coreNative` | Scala Native | All classes — algorithm + stream wrappers (Native build) |
+| `coreWASM` | WASM | All classes — algorithm + stream wrappers (WASM build, experimental) |
+| `jvm` | JVM | Test-only — JVM interop tests (compares with java.util.zip) |
 
 ### Common Commands
 
@@ -73,7 +71,7 @@ Both modules use the same package name. The `core` module provides the algorithm
 # ── Compile ──────────────────────────────────────────────────────────────────
 ./mill core[2.13.16].compile         # JVM, Scala 2.13
 ./mill core[3.3.7].compile           # JVM, Scala 3
-./mill jvm[2.13.16].compile          # JVM stream wrappers
+./mill jvm[2.13.16].compile          # JVM interop tests module
 ./mill coreJS[2.13.16].compile       # Scala.js
 ./mill coreJS[3.3.7].compile         # Scala.js, Scala 3
 ./mill coreNative[2.13.16].compile   # Scala Native
@@ -85,8 +83,8 @@ Both modules use the same package name. The `core` module provides the algorithm
 # ── Test ─────────────────────────────────────────────────────────────────────
 ./mill core[2.13.16].test            # JVM core
 ./mill core[3.3.7].test              # JVM core, Scala 3
-./mill jvm[2.13.16].test             # JVM stream wrappers
-./mill jvm[3.3.7].test               # JVM stream wrappers, Scala 3
+./mill jvm[2.13.16].test             # JVM interop tests
+./mill jvm[3.3.7].test               # JVM interop tests, Scala 3
 ./mill coreJS[2.13.16].test          # Scala.js (requires Node.js)
 ./mill coreNative[2.13.16].test      # Scala Native (requires Clang/LLVM)
 ./mill coreWASM[2.13.16].test        # WASM (requires Node.js)
@@ -125,7 +123,6 @@ When making changes to algorithm files, stay as close as possible to the corresp
 The `core` module MUST NOT use any of the following:
 
 ```
-java.io.*          (use jvm module for streams)
 java.net.*
 java.util.zip.*
 java.lang.reflect.*
@@ -138,10 +135,11 @@ Safe to use anywhere in `core`:
 ```
 java.lang.*                          (System.arraycopy, Math.*, Integer.*)
 java.nio.charset.StandardCharsets    (available in Scala.js/Native)
+java.io.FilterInputStream           (available on all platforms)
+java.io.FilterOutputStream          (available on all platforms)
+java.io.IOException                 (available on all platforms)
 scala.*                              (standard library)
 ```
-
-If you need to add a stream class, it goes in the `jvm` module only.
 
 ### Exception Hierarchy
 
@@ -155,7 +153,7 @@ class ZStreamException(msg: String) extends Exception(msg)
 
 The original Java jzlib has `GZIPException extends java.io.IOException` and `ZStreamException extends java.io.IOException`. The Scala port changes this to `Exception` for cross-platform compatibility.
 
-JVM stream classes in the `jvm` module catch these and rethrow as `java.io.IOException` at the `java.io` boundary.
+JVM stream classes in the `core` module catch these and rethrow as `java.io.IOException` at the `java.io` boundary.
 
 ### Testing with munit
 
@@ -266,7 +264,7 @@ inflater.init(15 + 32)                          // 15+32 = auto-detect ZLIB or G
 When porting an upstream jzlib commit or adding a feature:
 
 1. Read the upstream jzlib commit at `https://github.com/jruby/jzlib/commit/<SHA>`
-2. Translate the Java changes to Scala, placing code in `core/` or `jvm/` as appropriate
+2. Translate the Java changes to Scala, placing code in `core/`
 3. Update or add tests in munit format
 4. Run `./mill mill.scalalib.scalafmt.ScalafmtModule/reformatAll __.sources`
 5. Run `./mill __.test` and ensure all tests pass
@@ -284,10 +282,10 @@ When porting an upstream jzlib commit or adding a feature:
 | Adler-32 checksum | `core/src/com/jcraft/jzlib/Adler32.scala` |
 | CRC-32 checksum | `core/src/com/jcraft/jzlib/CRC32.scala` |
 | GZIP header | `core/src/com/jcraft/jzlib/GZIPHeader.scala` |
-| JVM output stream | `jvm/src/com/jcraft/jzlib/DeflaterOutputStream.scala` |
-| JVM input stream | `jvm/src/com/jcraft/jzlib/InflaterInputStream.scala` |
-| JVM GZIP output | `jvm/src/com/jcraft/jzlib/GZIPOutputStream.scala` |
-| JVM GZIP input | `jvm/src/com/jcraft/jzlib/GZIPInputStream.scala` |
+| Output stream | `core/src/com/jcraft/jzlib/DeflaterOutputStream.scala` |
+| Input stream | `core/src/com/jcraft/jzlib/InflaterInputStream.scala` |
+| GZIP output | `core/src/com/jcraft/jzlib/GZIPOutputStream.scala` |
+| GZIP input | `core/src/com/jcraft/jzlib/GZIPInputStream.scala` |
 | Upstream jzlib source | `references/jzlib/` (git submodule) |
 | Mill build definition | `build.sc` |
 | Mill version | `.mill-version` (0.12.11) |

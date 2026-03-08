@@ -61,7 +61,7 @@ scala-zlib/
 ├── LICENSE.txt                 # BSD-style license
 ├── ChangeLog                   # Original jzlib changelog
 ├── references/jzlib/           # Upstream jzlib (git submodule)
-├── core/                       # Cross-platform algorithm module (JVM + JS + Native + WASM)
+├── core/                       # All classes — algorithm + stream wrappers (JVM + JS + Native + WASM)
 │   ├── src/
 │   │   └── com/jcraft/jzlib/
 │   │       ├── JZlib.scala     # Constants and WrapperType enum
@@ -79,18 +79,16 @@ scala-zlib/
 │   │       ├── CRC32.scala     # CRC-32 checksum
 │   │       ├── GZIPHeader.scala# GZIP header data
 │   │       ├── GZIPException.scala     # Exception (extends Exception, NOT IOException)
-│   │       └── ZStreamException.scala  # Exception (extends Exception, NOT IOException)
+│   │       ├── ZStreamException.scala  # Exception (extends Exception, NOT IOException)
+│   │       ├── DeflaterOutputStream.scala  # Compressing FilterOutputStream
+│   │       ├── InflaterInputStream.scala   # Decompressing FilterInputStream
+│   │       ├── GZIPOutputStream.scala      # GZIP-format DeflaterOutputStream
+│   │       ├── GZIPInputStream.scala       # GZIP-format InflaterInputStream
+│   │       ├── ZOutputStream.scala         # Deprecated legacy stream
+│   │       └── ZInputStream.scala          # Deprecated legacy stream
 │   └── test/src/               # Cross-platform tests (munit)
-├── jvm/                        # JVM-only stream wrappers
-│   ├── src/
-│   │   └── com/jcraft/jzlib/
-│   │       ├── DeflaterOutputStream.scala
-│   │       ├── InflaterInputStream.scala
-│   │       ├── GZIPOutputStream.scala
-│   │       ├── GZIPInputStream.scala
-│   │       ├── ZOutputStream.scala     # Deprecated legacy stream
-│   │       └── ZInputStream.scala      # Deprecated legacy stream
-│   └── test/src/               # JVM-only tests (munit)
+├── jvm/                        # JVM interop tests only
+│   └── test/src/               # JVM-only tests (compare with java.util.zip)
 └── .github/
     └── workflows/
         └── ci.yml              # GitHub Actions CI configuration
@@ -98,8 +96,8 @@ scala-zlib/
 
 ### Module architecture
 
-- **`core`** — Pure algorithm (`Deflater`, `Inflater`, `Adler32`, `CRC32`, `GZIPHeader`). NO `java.io` dependencies. Compiles to JVM, Scala.js, Scala Native, and WASM.
-- **`jvm`** — `java.io` stream wrappers (`DeflaterOutputStream`, `InflaterInputStream`, etc.). JVM only. Depends on `core`.
+- **`core`** — All classes: algorithm (`Deflater`, `Inflater`, `Adler32`, `CRC32`, `GZIPHeader`) and stream wrappers (`DeflaterOutputStream`, `InflaterInputStream`, `GZIPOutputStream`, `GZIPInputStream`). Compiles to JVM, Scala.js, Scala Native, and WASM.
+- **`jvm`** — Test-only. JVM interop tests that compare scala-zlib output with `java.util.zip`.
 
 ## Building and Testing
 
@@ -108,7 +106,7 @@ scala-zlib/
 ```bash
 ./mill core[2.13.16].compile         # JVM, Scala 2.13
 ./mill core[3.3.7].compile           # JVM, Scala 3
-./mill jvm[2.13.16].compile          # JVM stream wrappers
+./mill jvm[2.13.16].compile          # JVM interop tests module
 ./mill coreJS[2.13.16].compile       # Scala.js
 ./mill coreNative[2.13.16].compile   # Scala Native
 ./mill coreWASM[2.13.16].compile     # WASM (experimental)
@@ -120,7 +118,7 @@ scala-zlib/
 ```bash
 # ── By platform ──────────────────────────────────────────────────────────────
 ./mill core[2.13.16].test            # JVM core
-./mill jvm[2.13.16].test             # JVM stream wrappers
+./mill jvm[2.13.16].test             # JVM interop tests
 ./mill coreJS[2.13.16].test          # Scala.js (requires Node.js)
 ./mill coreNative[2.13.16].test      # Scala Native (requires Clang/LLVM)
 ./mill coreWASM[2.13.16].test        # WASM (requires Node.js)
@@ -246,13 +244,14 @@ When porting an upstream commit:
    ```
    Or browse the submodule: `references/jzlib/`
 
-2. **Identify which files changed** and locate the corresponding Scala sources in `core/` or `jvm/`.
+2. **Identify which files changed** and locate the corresponding Scala sources in `core/`.
 
 3. **Translate Java to idiomatic Scala**
    - Use `val` / `var` appropriately (algorithm state is `var`)
    - Replace Java arrays `int[]` → `Array[Int]`, `byte[]` → `Array[Byte]`
    - Preserve the imperative style in algorithm code (see [Code Style](#code-style))
    - Replace `throws IOException` with Scala's unchecked exceptions
+   - All source code goes in `core/` (algorithm and stream wrappers)
 
 4. **Update tests to munit format** (see [Testing](#testing))
 
@@ -302,7 +301,6 @@ def deflate(flush: Int): Int = ...
 The `core` module must compile on JVM, Scala.js, Scala Native, and WASM. This means:
 
 **Do NOT use in `core`:**
-- `java.io.*` — use the `jvm` module for any stream classes
 - `java.net.*`
 - `java.util.zip.*`
 - `java.lang.reflect.*`
@@ -312,9 +310,8 @@ The `core` module must compile on JVM, Scala.js, Scala Native, and WASM. This me
 **Safe to use in `core`:**
 - `java.lang.*` (including `System.arraycopy`, `Math.*`, `Integer.*`)
 - `java.nio.charset.StandardCharsets`
+- `java.io.FilterInputStream`, `java.io.FilterOutputStream`, `java.io.IOException` (available on all platforms)
 - Scala standard library (`scala.*`)
-
-Stream classes (`DeflaterOutputStream`, `InflaterInputStream`, `GZIPOutputStream`, `GZIPInputStream`, `ZOutputStream`, `ZInputStream`) belong in the `jvm` module only.
 
 ### Exception Hierarchy
 
@@ -326,7 +323,7 @@ class GZIPException(msg: String) extends Exception(msg)
 class ZStreamException(msg: String) extends Exception(msg)
 ```
 
-JVM stream classes in the `jvm` module catch these and rethrow as `java.io.IOException` at the `java.io` boundary.
+JVM stream classes in the `core` module catch these and rethrow as `java.io.IOException` at the `java.io` boundary.
 
 ## Testing
 
@@ -363,7 +360,7 @@ test("GZIPInputStream reads concatenated gzip streams") { ... }
 ### Test File Locations
 
 - `core/test/src/` — Cross-platform tests (run on JVM, JS, Native, WASM)
-- `jvm/test/src/` — JVM-only tests (stream wrappers)
+- `jvm/test/src/` — JVM-only interop tests (compare with java.util.zip)
 
 ### Coverage Expectations
 
@@ -381,7 +378,7 @@ Before your PR can be merged it must:
 4. ✅ Include tests for new functionality or bug fixes
 5. ✅ Follow the commit message format above
 6. ✅ Reference the upstream jzlib commit if applicable
-7. ✅ Not introduce `java.io` or other JVM-only imports in the `core` module
+7. ✅ Not introduce JVM-only imports (e.g. `java.net.*`, `java.util.zip.*`, `java.lang.reflect.*`) in the `core` module
 
 CI runs format checks, then tests on JVM (Scala 2.13 + 3), Scala.js (Scala 2.13 + 3), and Scala Native (Scala 2.13 + 3) in parallel.
 
