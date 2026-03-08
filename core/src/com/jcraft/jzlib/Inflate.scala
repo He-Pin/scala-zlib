@@ -91,14 +91,14 @@ private[jzlib] object Inflate {
 private[jzlib] final class Inflate(private val z: ZStream) {
   import Inflate._
 
-  var mode: Int         = 0
-  var method: Int       = 0
-  var was: Long         = -1L
-  var need: Long        = 0L
-  var marker: Int       = 0
-  var wrap: Int         = 0
-  var wbits: Int        = 0
-  var blocks: InfBlocks = null
+  var mode: Int             = 0
+  var method: Int           = 0
+  var was: Long             = -1L
+  var need: Long            = 0L
+  var marker: Int           = 0
+  var wrap: Int             = 0
+  var wbits: Int            = 0
+  var blocks: InfBlocks     = null
   private var dictSize: Int = 0
 
   private var flags: Int          = 0
@@ -556,8 +556,8 @@ private[jzlib] final class Inflate(private val z: ZStream) {
   }
 
   def inflateGetDictionary(
-      dictionary: Array[Byte],
-      dictLength: Array[Int],
+    dictionary: Array[Byte],
+    dictLength: Array[Int],
   ): Int = {
     if (z == null) return Z_STREAM_ERROR
     if (blocks == null || blocks.window == null) return Z_STREAM_ERROR
