@@ -11,15 +11,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Cross-platform stream classes — all stream wrappers now available on JVM, Scala.js, Scala Native, and WASM
 - `JZlib.deflateBound()` / `compressBound()` — upper bound on compressed size
 - `JZlib.compress()` / `uncompress()` — one-shot compression utilities
-- `JZlib.getErrorDescription()` — human-readable error messages
-- JMH benchmark suite expanded to 30 methods (100% API coverage)
-- jruby API compatibility test suite
-- Java 25 support via Mill 1.1.2
+- `JZlib.getErrorDescription()` — human-readable error messages for zlib return codes
+- `Z_RLE` and `Z_FIXED` compression strategy constants
+- `toString` on `Deflater` and `Inflater` for debugging (shows stream state summary)
+- Cross-platform usage examples (`example/` module)
+- Release workflow for Maven Central publishing
+
+### Fixed
+- Integer overflow in `compress` / `uncompress` when computing output buffer sizes
+- CI Java 25 compatibility and fail-fast behavior
 
 ### Changed
 - Upgraded Mill from 0.12.11 to 1.1.2
 - Build file renamed from `build.sc` to `build.mill`
 - CI: Java 25 now tested natively (not just bytecode compat)
+- CI: updated workflows for Mill 1.1.2
+
+### Documentation
+- Scaladoc added to all core public APIs (`Deflater`, `Inflater`, `JZlib`, `ZStream`, `GZIPHeader`, exceptions)
+- Scaladoc added to JVM stream classes (`DeflaterOutputStream`, `InflaterInputStream`, `GZIPOutputStream`, `GZIPInputStream`, `ZOutputStream`, `ZInputStream`)
+- Deprecated API migration guide added to README
+- Platform support documentation updated for cross-platform stream classes
+
+### Testing
+- `JRubyCompatSuite` — jruby API compatibility test suite (JVM)
+- `JZlibUtilSuite` — tests for `deflateBound`, `compressBound`, `compress`, `uncompress`
+- `StrategyConstantsSuite` — tests for `Z_RLE` and `Z_FIXED` strategy constants
+- `ErrorDescriptionSuite` — tests for `getErrorDescription` return values
+- `WrapperTypeSuite` — edge case tests for wrapper type handling
+- JMH benchmarks expanded to cover one-shot utility functions
 
 ## [1.1.5] - 2026-03-08
 

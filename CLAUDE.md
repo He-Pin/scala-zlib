@@ -30,10 +30,10 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 
 | Class | Module | Description |
 |-------|--------|-------------|
-| `JZlib` | core | Constants, `WrapperType` enum, `adler32_combine`, `crc32_combine`, `deflateBound`, `compressBound`, `compress`, `uncompress`, `getErrorDescription` |
+| `JZlib` | core | Constants (`Z_RLE`, `Z_FIXED`, etc.), `WrapperType` enum, `adler32_combine`, `crc32_combine`, `deflateBound`, `compressBound`, `compress`, `uncompress`, `getErrorDescription` |
 | `ZStream` | core | Low-level stream state — **deprecated**, use `Deflater`/`Inflater` |
-| `Deflater` | core | High-level compression API |
-| `Inflater` | core | High-level decompression API |
+| `Deflater` | core | High-level compression API (has `toString` for debugging) |
+| `Inflater` | core | High-level decompression API (has `toString` for debugging) |
 | `Deflate` | core | Internal deflate algorithm (not public API) |
 | `Inflate` | core | Internal inflate algorithm (not public API) |
 | `InfBlocks` | core | Inflate block decoder (internal) |
@@ -270,6 +270,32 @@ Use `JZlib.getErrorDescription(code)` to get a human-readable error message for 
 | `JZlib.compress(data)` | One-shot compression (returns compressed byte array) |
 | `JZlib.uncompress(data)` | One-shot decompression (returns decompressed byte array) |
 | `JZlib.getErrorDescription(code)` | Human-readable error message for a zlib return code |
+
+### Strategy Constants
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `Z_DEFAULT_STRATEGY` | 0 | Default — balanced compression |
+| `Z_FILTERED` | 1 | Optimized for data produced by a filter (or predictor) |
+| `Z_HUFFMAN_ONLY` | 2 | Huffman encoding only, no string matching |
+| `Z_RLE` | 3 | Run-length encoding — fast, good for images with many repeated bytes |
+| `Z_FIXED` | 4 | Use fixed Huffman codes — prevents dynamic tree generation |
+
+### Test Suites
+
+| Suite | Module | Description |
+|-------|--------|-------------|
+| `Adler32Suite` | core | Adler-32 checksum correctness and combine |
+| `CRC32Suite` | core | CRC-32 checksum correctness and combine |
+| `DeflateInflateSuite` | core | Round-trip deflate/inflate across levels, strategies, and wrapper types |
+| `ErrorDescriptionSuite` | core | `getErrorDescription` return values for all return codes |
+| `JZlibUtilSuite` | core | `deflateBound`, `compressBound`, `compress`, `uncompress` |
+| `StrategyConstantsSuite` | core | `Z_RLE` and `Z_FIXED` strategy constants |
+| `WrapperTypeSuite` | core | Wrapper type edge cases |
+| `DeflaterInflaterStreamSuite` | jvm | JVM `DeflaterOutputStream` / `InflaterInputStream` interop with `java.util.zip` |
+| `GZIPIOStreamSuite` | jvm | JVM GZIP stream interop with `java.util.zip` |
+| `JRubyCompatSuite` | jvm | API compatibility with upstream jruby/jzlib |
+| `ZIOStreamSuite` | jvm | Legacy `ZOutputStream` / `ZInputStream` interop |
 
 ## Development Workflow
 
