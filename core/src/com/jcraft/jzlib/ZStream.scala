@@ -97,6 +97,12 @@ class ZStream {
 
   var adler: Checksum = null
 
+  /**
+   * Creates a `ZStream` with a custom checksum implementation.
+   *
+   * @param adler
+   *   the [[Checksum]] instance to use for integrity checking (typically [[Adler32]] or [[CRC32]])
+   */
   def this(adler: Checksum) = {
     this()
     this.adler = adler
@@ -106,11 +112,59 @@ class ZStream {
     this.adler = new Adler32()
   }
 
-  def inflateInit(): Int                               = inflateInit(DEF_WBITS)
-  def inflateInit(nowrap: Boolean): Int                = inflateInit(DEF_WBITS, nowrap)
-  def inflateInit(w: Int): Int                         = inflateInit(w, false)
+  /**
+   * Initializes the inflate (decompression) stream with default window bits (`MAX_WBITS` = 15) and zlib wrapping.
+   *
+   * @return
+   *   [[JZlib.Z_OK]] on success
+   * @see
+   *   [[Inflater]] for the recommended decompression API
+   */
+  def inflateInit(): Int = inflateInit(DEF_WBITS)
+
+  /**
+   * Initializes the inflate stream with default window bits and optional raw mode.
+   *
+   * @param nowrap
+   *   if `true`, expects raw deflate input (no zlib header/trailer)
+   * @return
+   *   [[JZlib.Z_OK]] on success
+   */
+  def inflateInit(nowrap: Boolean): Int = inflateInit(DEF_WBITS, nowrap)
+
+  /**
+   * Initializes the inflate stream with the given window bits and zlib wrapping.
+   *
+   * @param w
+   *   window size in bits (9–15); must match or exceed the window size used during compression
+   * @return
+   *   [[JZlib.Z_OK]] on success
+   */
+  def inflateInit(w: Int): Int = inflateInit(w, false)
+
+  /**
+   * Initializes the inflate stream with default window bits for the given wrapper type.
+   *
+   * @param wrapperType
+   *   expected input format: [[JZlib.W_ZLIB]], [[JZlib.W_GZIP]], [[JZlib.W_NONE]] (raw), or [[JZlib.W_ANY]]
+   *   (auto-detect)
+   * @return
+   *   [[JZlib.Z_OK]] on success
+   */
   def inflateInit(wrapperType: JZlib.WrapperType): Int = inflateInit(DEF_WBITS, wrapperType)
 
+  /**
+   * Initializes the inflate stream with the given window bits and wrapper type.
+   *
+   * Use [[JZlib.W_ANY]] to auto-detect whether input is ZLIB or GZIP wrapped.
+   *
+   * @param w
+   *   window size in bits (9–15)
+   * @param wrapperType
+   *   expected input format: [[JZlib.W_ZLIB]], [[JZlib.W_GZIP]], [[JZlib.W_NONE]], or [[JZlib.W_ANY]]
+   * @return
+   *   [[JZlib.Z_OK]] on success
+   */
   def inflateInit(w: Int, wrapperType: JZlib.WrapperType): Int = {
     var ww     = w
     var nowrap = false
@@ -121,42 +175,153 @@ class ZStream {
     inflateInit(ww, nowrap)
   }
 
+  /**
+   * Core inflate initializer used by all other `inflateInit` overloads.
+   *
+   * @param w
+   *   window size in bits; negative values mean raw deflate, values above 15 enable GZIP wrapping
+   * @param nowrap
+   *   if `true`, negates `w` for raw deflate mode
+   * @return
+   *   [[JZlib.Z_OK]] on success
+   */
   def inflateInit(w: Int, nowrap: Boolean): Int = {
     istate = new Inflate(this)
     istate.inflateInit(if (nowrap) -w else w)
   }
 
+  /**
+   * Decompresses input data, writing to the output buffer.
+   *
+   * Call repeatedly until [[JZlib.Z_STREAM_END]] is returned. Set input via [[setInput]] and output via [[setOutput]]
+   * before each call.
+   *
+   * @param f
+   *   flush mode: typically [[JZlib.Z_NO_FLUSH]] for normal operation, or [[JZlib.Z_FINISH]] to hint that no more input
+   *   will be provided
+   * @return
+   *   [[JZlib.Z_OK]] if progress was made, [[JZlib.Z_STREAM_END]] when decompression is complete, [[JZlib.Z_NEED_DICT]]
+   *   if a preset dictionary is required, or a negative error code ([[JZlib.Z_STREAM_ERROR]], [[JZlib.Z_DATA_ERROR]],
+   *   [[JZlib.Z_BUF_ERROR]])
+   */
   def inflate(f: Int): Int = {
     if (istate == null) return Z_STREAM_ERROR
     istate.inflate(f)
   }
 
+  /**
+   * Frees all internal decompression state.
+   *
+   * Must be called when the inflate stream is no longer needed to release resources. After calling `inflateEnd()`, the
+   * stream cannot be used for decompression without re-initialization via [[inflateInit]].
+   *
+   * @return
+   *   [[JZlib.Z_OK]] on success, or [[JZlib.Z_STREAM_ERROR]] if the inflate state was not initialized
+   */
   def inflateEnd(): Int = {
     if (istate == null) return Z_STREAM_ERROR
     istate.inflateEnd()
   }
 
+  /**
+   * Skips invalid compressed data until a possible full flush point is found.
+   *
+   * This can be used to recover from data corruption by searching for a valid sync point in the compressed stream.
+   *
+   * @return
+   *   [[JZlib.Z_OK]] if a sync point was found, or [[JZlib.Z_STREAM_ERROR]] if the inflate state was not initialized
+   */
   def inflateSync(): Int = {
     if (istate == null) return Z_STREAM_ERROR
     istate.inflateSync()
   }
 
+  /**
+   * Checks whether the inflate stream is currently at a sync point in the compressed data.
+   *
+   * @return
+   *   1 if at a sync point, 0 otherwise, or [[JZlib.Z_STREAM_ERROR]] if the inflate state was not initialized
+   */
   def inflateSyncPoint(): Int = {
     if (istate == null) return Z_STREAM_ERROR
     istate.inflateSyncPoint()
   }
 
+  /**
+   * Sets a preset dictionary for decompression.
+   *
+   * Call this after [[inflate]] returns [[JZlib.Z_NEED_DICT]]. The dictionary must match the one used during
+   * compression (verified by Adler-32 checksum).
+   *
+   * @param dictionary
+   *   byte array containing the dictionary data
+   * @param dictLength
+   *   number of bytes to use from the dictionary array
+   * @return
+   *   [[JZlib.Z_OK]] on success, [[JZlib.Z_DATA_ERROR]] if the dictionary does not match, or [[JZlib.Z_STREAM_ERROR]]
+   *   if the inflate state was not initialized
+   */
   def inflateSetDictionary(dictionary: Array[Byte], dictLength: Int): Int = {
     if (istate == null) return Z_STREAM_ERROR
     istate.inflateSetDictionary(dictionary, dictLength)
   }
 
+  /** Returns `true` when the inflate state has reached `DONE`, indicating decompression is complete. */
   def inflateFinished(): Boolean = istate.mode == 12 /*DONE*/
 
-  def deflateInit(level: Int): Int                  = deflateInit(level, MAX_WBITS)
-  def deflateInit(level: Int, nowrap: Boolean): Int = deflateInit(level, MAX_WBITS, nowrap)
-  def deflateInit(level: Int, bits: Int): Int       = deflateInit(level, bits, false)
+  /**
+   * Initializes the deflate (compression) stream with the given compression level, using default window bits
+   * (`MAX_WBITS` = 15) and zlib wrapping.
+   *
+   * @param level
+   *   compression level: [[JZlib.Z_NO_COMPRESSION]] (0) through [[JZlib.Z_BEST_COMPRESSION]] (9), or
+   *   [[JZlib.Z_DEFAULT_COMPRESSION]] (-1)
+   * @return
+   *   [[JZlib.Z_OK]] on success
+   * @see
+   *   [[Deflater]] for the recommended compression API
+   */
+  def deflateInit(level: Int): Int = deflateInit(level, MAX_WBITS)
 
+  /**
+   * Initializes the deflate stream with the given level and optional raw-deflate mode.
+   *
+   * @param level
+   *   compression level (0–9 or -1)
+   * @param nowrap
+   *   if `true`, produces raw deflate output (no zlib header/trailer)
+   * @return
+   *   [[JZlib.Z_OK]] on success
+   */
+  def deflateInit(level: Int, nowrap: Boolean): Int = deflateInit(level, MAX_WBITS, nowrap)
+
+  /**
+   * Initializes the deflate stream with the given level and window bits (zlib wrapping).
+   *
+   * @param level
+   *   compression level (0–9 or -1)
+   * @param bits
+   *   window size in bits (9–15); larger values give better compression at the cost of more memory
+   * @return
+   *   [[JZlib.Z_OK]] on success
+   */
+  def deflateInit(level: Int, bits: Int): Int = deflateInit(level, bits, false)
+
+  /**
+   * Initializes the deflate stream with full control over parameters including wrapper type.
+   *
+   * @param level
+   *   compression level (0–9 or -1)
+   * @param bits
+   *   window size in bits (9–15)
+   * @param memlevel
+   *   memory level for internal compression state (1–9); higher values use more memory but are faster
+   * @param wrapperType
+   *   output format: [[JZlib.W_ZLIB]], [[JZlib.W_GZIP]], or [[JZlib.W_NONE]]. [[JZlib.W_ANY]] is invalid for
+   *   compression and causes [[JZlib.Z_STREAM_ERROR]].
+   * @return
+   *   [[JZlib.Z_OK]] on success, or [[JZlib.Z_STREAM_ERROR]] on invalid parameters
+   */
   def deflateInit(level: Int, bits: Int, memlevel: Int, wrapperType: JZlib.WrapperType): Int = {
     if (bits < 9 || bits > 15) return Z_STREAM_ERROR
     var b = bits
@@ -167,21 +332,67 @@ class ZStream {
     deflateInit(level, b, memlevel)
   }
 
+  /**
+   * Core deflate initializer with compression level, window bits, and memory level.
+   *
+   * @param level
+   *   compression level (0–9 or -1)
+   * @param bits
+   *   window size in bits; negative values mean raw deflate, values above 15 enable GZIP wrapping
+   * @param memlevel
+   *   memory level (1–9)
+   * @return
+   *   [[JZlib.Z_OK]] on success
+   */
   def deflateInit(level: Int, bits: Int, memlevel: Int): Int = {
     dstate = new Deflate(this)
     dstate.deflateInit(level, bits, memlevel)
   }
 
+  /**
+   * Initializes the deflate stream with the given level, window bits, and raw-deflate flag.
+   *
+   * @param level
+   *   compression level (0–9 or -1)
+   * @param bits
+   *   window size in bits (9–15)
+   * @param nowrap
+   *   if `true`, produces raw deflate output (no header/trailer)
+   * @return
+   *   [[JZlib.Z_OK]] on success
+   */
   def deflateInit(level: Int, bits: Int, nowrap: Boolean): Int = {
     dstate = new Deflate(this)
     dstate.deflateInit(level, if (nowrap) -bits else bits)
   }
 
+  /**
+   * Compresses input data, writing to the output buffer.
+   *
+   * Call repeatedly until all input is consumed and output is produced. Set input via [[setInput]] and output via
+   * [[setOutput]] before each call. Use [[JZlib.Z_FINISH]] as the flush parameter to signal the end of input; the
+   * method returns [[JZlib.Z_STREAM_END]] when all output has been generated.
+   *
+   * @param flush
+   *   flush mode: [[JZlib.Z_NO_FLUSH]], [[JZlib.Z_SYNC_FLUSH]], [[JZlib.Z_FULL_FLUSH]], or [[JZlib.Z_FINISH]]
+   * @return
+   *   [[JZlib.Z_OK]] if progress was made, [[JZlib.Z_STREAM_END]] when compression is complete, or a negative error
+   *   code ([[JZlib.Z_STREAM_ERROR]], [[JZlib.Z_BUF_ERROR]])
+   */
   def deflate(flush: Int): Int = {
     if (dstate == null) return Z_STREAM_ERROR
     dstate.deflate(flush)
   }
 
+  /**
+   * Frees all internal compression state.
+   *
+   * Must be called when the deflate stream is no longer needed to release resources. After calling `deflateEnd()`, the
+   * stream cannot be used for compression without re-initialization via [[deflateInit]].
+   *
+   * @return
+   *   [[JZlib.Z_OK]] on success, or [[JZlib.Z_STREAM_ERROR]] if the deflate state was not initialized
+   */
   def deflateEnd(): Int = {
     if (dstate == null) return Z_STREAM_ERROR
     val ret = dstate.deflateEnd()
@@ -189,16 +400,47 @@ class ZStream {
     ret
   }
 
+  /**
+   * Dynamically changes the compression level and strategy on an active deflate stream.
+   *
+   * This can be used to switch between [[JZlib.Z_DEFAULT_STRATEGY]] and [[JZlib.Z_FILTERED]] mid-stream.
+   *
+   * @param level
+   *   new compression level (0–9 or -1)
+   * @param strategy
+   *   new strategy: [[JZlib.Z_DEFAULT_STRATEGY]], [[JZlib.Z_FILTERED]], or [[JZlib.Z_HUFFMAN_ONLY]]
+   * @return
+   *   [[JZlib.Z_OK]] on success, or [[JZlib.Z_STREAM_ERROR]] if the deflate state was not initialized
+   */
   def deflateParams(level: Int, strategy: Int): Int = {
     if (dstate == null) return Z_STREAM_ERROR
     dstate.deflateParams(level, strategy)
   }
 
+  /**
+   * Sets a preset dictionary for compression.
+   *
+   * Must be called after [[deflateInit]] and before the first call to [[deflate]]. The inflater must use the same
+   * dictionary (matched by Adler-32 checksum).
+   *
+   * @param dictionary
+   *   byte array containing the dictionary data
+   * @param dictLength
+   *   number of bytes to use from the dictionary array
+   * @return
+   *   [[JZlib.Z_OK]] on success, or [[JZlib.Z_STREAM_ERROR]] if the deflate state was not initialized
+   */
   def deflateSetDictionary(dictionary: Array[Byte], dictLength: Int): Int = {
     if (dstate == null) return Z_STREAM_ERROR
     dstate.deflateSetDictionary(dictionary, dictLength)
   }
 
+  /**
+   * Flushes as much pending compressed output as possible to the output buffer.
+   *
+   * Copies bytes from the internal pending output buffer to `next_out`, updating `next_out_index`, `avail_out`, and
+   * `total_out` accordingly. This is an internal method used during compression.
+   */
   // Flush as much pending output as possible.
   def flush_pending(): Unit = {
     var len = dstate.pending
@@ -215,6 +457,21 @@ class ZStream {
     if (dstate.pending == 0) dstate.pending_out = 0
   }
 
+  /**
+   * Reads input data into the given buffer, updating the running checksum.
+   *
+   * Copies up to `size` bytes from `next_in` into `buf` at the given `start` offset, advancing `next_in_index` and
+   * decrementing `avail_in`. If wrapping is enabled, the checksum ([[adler]]) is updated with the consumed bytes.
+   *
+   * @param buf
+   *   destination buffer
+   * @param start
+   *   starting offset in `buf`
+   * @param size
+   *   maximum number of bytes to read
+   * @return
+   *   the number of bytes actually read (0 if no input is available)
+   */
   // Read a new buffer from the current input stream.
   def read_buf(buf: Array[Byte], start: Int, size: Int): Int = {
     var len = avail_in
@@ -230,8 +487,22 @@ class ZStream {
     len
   }
 
+  /**
+   * Returns the running Adler-32 checksum value for data processed so far.
+   *
+   * For zlib-wrapped streams this is the Adler-32 of the uncompressed data. For GZIP-wrapped streams it is the CRC-32.
+   *
+   * @return
+   *   the current checksum value
+   */
   def getAdler: Long = adler.getValue
 
+  /**
+   * Frees all buffer references held by this stream.
+   *
+   * Sets `next_in`, `next_out`, and `msg` to `null`. Does '''not''' free internal compression or decompression state;
+   * call [[deflateEnd]] or [[inflateEnd]] for that.
+   */
   def free(): Unit = {
     next_in = null
     next_out = null
@@ -312,23 +583,65 @@ class ZStream {
     }
   }
 
-  def getNextIn: Array[Byte]           = next_in
-  def setNextIn(v: Array[Byte]): Unit  = next_in = v
-  def getNextInIndex: Int              = next_in_index
-  def setNextInIndex(v: Int): Unit     = next_in_index = v
-  def getAvailIn: Int                  = avail_in
-  def setAvailIn(v: Int): Unit         = avail_in = v
-  def getNextOut: Array[Byte]          = next_out
-  def setNextOut(v: Array[Byte]): Unit = next_out = v
-  def getNextOutIndex: Int             = next_out_index
-  def setNextOutIndex(v: Int): Unit    = next_out_index = v
-  def getAvailOut: Int                 = avail_out
-  def setAvailOut(v: Int): Unit        = avail_out = v
-  def getTotalOut: Long                = total_out
-  def getTotalIn: Long                 = total_in
-  def getMessage: String               = msg
+  /** Returns the current input byte array. */
+  def getNextIn: Array[Byte] = next_in
 
+  /** Sets the input byte array directly. Prefer [[setInput]] for most use cases. */
+  def setNextIn(v: Array[Byte]): Unit = next_in = v
+
+  /** Returns the current read position within the input byte array. */
+  def getNextInIndex: Int = next_in_index
+
+  /** Sets the read position within the input byte array. */
+  def setNextInIndex(v: Int): Unit = next_in_index = v
+
+  /** Returns the number of bytes available in the input buffer. */
+  def getAvailIn: Int = avail_in
+
+  /** Sets the number of bytes available in the input buffer. */
+  def setAvailIn(v: Int): Unit = avail_in = v
+
+  /** Returns the current output byte array. */
+  def getNextOut: Array[Byte] = next_out
+
+  /** Sets the output byte array directly. Prefer [[setOutput]] for most use cases. */
+  def setNextOut(v: Array[Byte]): Unit = next_out = v
+
+  /** Returns the current write position within the output byte array. */
+  def getNextOutIndex: Int = next_out_index
+
+  /** Sets the write position within the output byte array. */
+  def setNextOutIndex(v: Int): Unit = next_out_index = v
+
+  /** Returns the remaining free space in the output buffer. */
+  def getAvailOut: Int = avail_out
+
+  /** Sets the remaining free space in the output buffer. */
+  def setAvailOut(v: Int): Unit = avail_out = v
+
+  /** Returns the total number of bytes written to output so far. */
+  def getTotalOut: Long = total_out
+
+  /** Returns the total number of input bytes read so far. */
+  def getTotalIn: Long = total_in
+
+  /** Returns the last error message, or `null` if no error occurred. */
+  def getMessage: String = msg
+
+  /**
+   * Ends the stream, releasing internal state. Overridden by [[Deflater]] and [[Inflater]].
+   *
+   * @return
+   *   [[JZlib.Z_OK]]
+   */
   // Overridden by Inflater and Deflater.
-  def end(): Int          = Z_OK
+  def end(): Int = Z_OK
+
+  /**
+   * Returns `true` if the stream has finished processing. Overridden by [[Deflater]] and [[Inflater]].
+   *
+   * @return
+   *   always `false` in the base class
+   */
   def finished(): Boolean = false
 }
