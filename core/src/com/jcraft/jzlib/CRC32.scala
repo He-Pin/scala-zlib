@@ -40,7 +40,7 @@ package com.jcraft.jzlib
  * Produces the same results as `java.util.zip.CRC32` but works on all Scala platforms (JVM, Scala.js, Scala Native,
  * WASM).
  *
- * The update method uses a slicing-by-4 algorithm that processes four bytes per loop iteration for improved throughput
+ * The update method uses a slicing-by-8 algorithm that processes eight bytes per loop iteration for improved throughput
  * on bulk data.
  *
  * Instances are not thread-safe; each thread should use its own instance.
@@ -51,25 +51,39 @@ final class CRC32 extends Checksum {
 
   private var v: Int = 0
 
+  /** Updates the CRC-32 checksum with a single byte. */
+  override def update(b: Int): Unit = {
+    val c = ~v
+    v = ~(CRC32.crc_table((c ^ b) & 0xff) ^ (c >>> 8))
+  }
+
   /** Updates the checksum with the specified bytes from `buf`. */
   def update(buf: Array[Byte], index: Int, len: Int): Unit = {
     var c   = ~v
     var i   = index
     var rem = len
 
-    // slicing-by-4: process four bytes per iteration
-    while (rem >= 4) {
-      val word = (buf(i) & 0xff) |
+    // slicing-by-8: process eight bytes per iteration
+    while (rem >= 8) {
+      val lo = (buf(i) & 0xff) |
         ((buf(i + 1) & 0xff) << 8) |
         ((buf(i + 2) & 0xff) << 16) |
         ((buf(i + 3) & 0xff) << 24)
-      val w    = c ^ word
-      c = CRC32.crc_slice(3)(w & 0xff) ^
-        CRC32.crc_slice(2)((w >>> 8) & 0xff) ^
-        CRC32.crc_slice(1)((w >>> 16) & 0xff) ^
-        CRC32.crc_slice(0)((w >>> 24) & 0xff)
-      i += 4
-      rem -= 4
+      val hi = (buf(i + 4) & 0xff) |
+        ((buf(i + 5) & 0xff) << 8) |
+        ((buf(i + 6) & 0xff) << 16) |
+        ((buf(i + 7) & 0xff) << 24)
+      val w  = c ^ lo
+      c = CRC32.crc_slice(7)(w & 0xff) ^
+        CRC32.crc_slice(6)((w >>> 8) & 0xff) ^
+        CRC32.crc_slice(5)((w >>> 16) & 0xff) ^
+        CRC32.crc_slice(4)((w >>> 24) & 0xff) ^
+        CRC32.crc_slice(3)(hi & 0xff) ^
+        CRC32.crc_slice(2)((hi >>> 8) & 0xff) ^
+        CRC32.crc_slice(1)((hi >>> 16) & 0xff) ^
+        CRC32.crc_slice(0)((hi >>> 24) & 0xff)
+      i += 8
+      rem -= 8
     }
 
     // process remaining bytes one at a time
@@ -129,16 +143,16 @@ object CRC32 {
   }
 
   /**
-   * Four 256-entry tables for slicing-by-4 CRC computation.
+   * Eight 256-entry tables for slicing-by-8 CRC computation.
    *
    * `crc_slice(0)` is the standard byte-at-a-time table (identical to `crc_table`). `crc_slice(k)(n)` is the CRC of
    * byte `n` followed by `k` zero bytes.
    */
   private[jzlib] val crc_slice: Array[Array[Int]] = {
-    val tables = Array.ofDim[Int](4, 256)
+    val tables = Array.ofDim[Int](8, 256)
     System.arraycopy(crc_table, 0, tables(0), 0, 256)
     var k      = 1
-    while (k < 4) {
+    while (k < 8) {
       var n = 0
       while (n < 256) {
         var c = tables(k - 1)(n)
