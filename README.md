@@ -23,6 +23,22 @@
 | Adler-32 / CRC-32 combining | ✅ `adler32_combine` / `crc32_combine` |
 | Preset dictionary compression | ✅ Full zlib dictionary support |
 
+## Standards Compliance
+
+scala-zlib fully implements these compression standards:
+
+| Standard | Description | Status |
+|----------|-------------|--------|
+| [RFC 1950](https://www.rfc-editor.org/rfc/rfc1950) | ZLIB Compressed Data Format | ✅ Full |
+| [RFC 1951](https://www.rfc-editor.org/rfc/rfc1951) | DEFLATE Compressed Data Format | ✅ Full |
+| [RFC 1952](https://www.rfc-editor.org/rfc/rfc1952) | GZIP File Format | ✅ Full |
+
+The implementation is based on zlib 1.1.3 algorithms via the [jzlib](https://github.com/jruby/jzlib) Java port.
+
+## jruby Compatibility
+
+scala-zlib uses the same package name (`com.jcraft.jzlib`), class names, and method signatures as the original jzlib library used by jruby. It is a binary-compatible drop-in replacement.
+
 ## Platform Support
 
 | Feature | JVM | Scala.js | Scala Native | WASM |
@@ -259,6 +275,24 @@ def decompress(data: Array[Byte], maxLen: Int = 65536): Array[Byte] = {
 | `ZOutputStream` | Legacy compressing stream — **deprecated**, use `DeflaterOutputStream` |
 | `ZInputStream` | Legacy decompressing stream — **deprecated**, use `InflaterInputStream` |
 
+### Utility Functions
+
+```scala
+import com.jcraft.jzlib._
+
+// Pre-allocate output buffer
+val maxSize = JZlib.deflateBound(inputData.length)
+val buffer = new Array[Byte](maxSize.toInt)
+
+// One-shot compression/decompression
+val compressed = JZlib.compress(inputData)
+val decompressed = JZlib.uncompress(compressed)
+
+// Human-readable error messages
+val msg = JZlib.getErrorDescription(JZlib.Z_DATA_ERROR)
+// => "invalid or incomplete deflate data"
+```
+
 ### `JZlib.WrapperType`
 
 | Value | Meaning |
@@ -272,8 +306,8 @@ def decompress(data: Array[Byte], maxLen: Int = 65536): Array[Byte] = {
 
 ### Prerequisites
 
-- **Java 17+** (Java 21 recommended; used in CI)
-- [Mill](https://mill-build.com/) 0.12.11 (pinned in `.mill-version`)
+- **Java 17+** (Java 21 recommended; Java 25 supported; used in CI)
+- [Mill](https://mill-build.com/) 1.1.2 (pinned in `.mill-version`)
 
 ### Build Commands
 

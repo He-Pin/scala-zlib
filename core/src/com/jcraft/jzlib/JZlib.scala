@@ -210,6 +210,27 @@ object JZlib {
    */
   def crc32_combine(crc1: Long, crc2: Long, len2: Long): Long =
     CRC32.combine(crc1, crc2, len2)
+
+  /**
+   * Returns a detailed human-readable description for a zlib return code.
+   *
+   * @param code
+   *   a zlib return code (Z_OK, Z_STREAM_ERROR, etc.)
+   * @return
+   *   detailed description of the error
+   */
+  def getErrorDescription(code: Int): String = code match {
+    case Z_OK            => "OK: operation completed successfully"
+    case Z_STREAM_END    => "Stream end: all input consumed and output produced"
+    case Z_NEED_DICT     => "Dictionary required: a preset dictionary is needed for decompression"
+    case Z_ERRNO         => "File I/O error"
+    case Z_STREAM_ERROR  => "Stream error: stream state is inconsistent (uninitialized or corrupted)"
+    case Z_DATA_ERROR    => "Data error: input data is corrupted or not in the expected format"
+    case Z_MEM_ERROR     => "Memory error: insufficient memory for the operation"
+    case Z_BUF_ERROR     => "Buffer error: no progress possible (output buffer full or input exhausted)"
+    case Z_VERSION_ERROR => "Version error: zlib library version mismatch"
+    case _               => s"Unknown error code: $code"
+  }
 }
 
 // Kept for source compatibility – the companion object holds the real API.
