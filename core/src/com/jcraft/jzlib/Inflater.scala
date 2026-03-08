@@ -339,3 +339,88 @@ final class Inflater extends ZStream with AutoCloseable {
   override def toString: String =
     s"Inflater(finished=${_finished}, avail_in=$avail_in, avail_out=$avail_out, total_in=$total_in, total_out=$total_out)"
 }
+
+/**
+ * Factory methods for creating pre-initialized [[Inflater]] instances.
+ *
+ * These convenience methods combine construction and initialization into a single call, which is more idiomatic in
+ * Scala than the two-step `new Inflater()` + `init(...)` pattern.
+ *
+ * ==Examples==
+ * {{{
+ * // Default zlib format
+ * val i1 = Inflater()
+ *
+ * // GZIP format
+ * val i2 = Inflater.gzip()
+ *
+ * // Auto-detect ZLIB or GZIP
+ * val i3 = Inflater.auto()
+ *
+ * // Explicit wrapper type
+ * val i4 = Inflater(JZlib.W_NONE)
+ * }}}
+ */
+object Inflater {
+
+  /**
+   * Creates an [[Inflater]] initialized for zlib-wrapped input (RFC 1950) with default window bits.
+   *
+   * Equivalent to:
+   * {{{
+   * val i = new Inflater()
+   * i.init()
+   * }}}
+   *
+   * @return
+   *   a ready-to-use `Inflater`
+   */
+  def apply(): Inflater = {
+    val i = new Inflater()
+    i.init()
+    i
+  }
+
+  /**
+   * Creates an [[Inflater]] initialized for the specified wrapper type with default window bits.
+   *
+   * @param wrapperType
+   *   expected input format: [[JZlib.W_ZLIB]], [[JZlib.W_GZIP]], [[JZlib.W_NONE]] (raw), or [[JZlib.W_ANY]]
+   *   (auto-detect)
+   * @return
+   *   a ready-to-use `Inflater`
+   */
+  def apply(wrapperType: JZlib.WrapperType): Inflater = {
+    val i = new Inflater()
+    i.init(wrapperType)
+    i
+  }
+
+  /**
+   * Creates an [[Inflater]] configured for GZIP input (RFC 1952).
+   *
+   * This is a convenience shorthand for `Inflater(JZlib.W_GZIP)`.
+   *
+   * @return
+   *   a ready-to-use `Inflater` that expects GZIP-wrapped input
+   */
+  def gzip(): Inflater = {
+    val i = new Inflater()
+    i.init(15 + 16) // 15 + 16 = GZIP wrapping
+    i
+  }
+
+  /**
+   * Creates an [[Inflater]] that auto-detects whether the input is ZLIB-wrapped (RFC 1950) or GZIP-wrapped (RFC 1952).
+   *
+   * This is a convenience shorthand for `Inflater(JZlib.W_ANY)`.
+   *
+   * @return
+   *   a ready-to-use `Inflater` that auto-detects the input format
+   */
+  def auto(): Inflater = {
+    val i = new Inflater()
+    i.init(15 + 32) // 15 + 32 = auto-detect ZLIB or GZIP
+    i
+  }
+}

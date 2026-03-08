@@ -398,3 +398,97 @@ final class Deflater extends ZStream with AutoCloseable {
   override def toString: String =
     s"Deflater(finished=${_finished}, avail_in=$avail_in, avail_out=$avail_out, total_in=$total_in, total_out=$total_out)"
 }
+
+/**
+ * Factory methods for creating pre-initialized [[Deflater]] instances.
+ *
+ * These convenience methods combine construction and initialization into a single call, which is more idiomatic in
+ * Scala than the two-step `new Deflater()` + `init(...)` pattern.
+ *
+ * ==Examples==
+ * {{{
+ * // Default compression, zlib format
+ * val d1 = Deflater()
+ *
+ * // Best compression, zlib format
+ * val d2 = Deflater(JZlib.Z_BEST_COMPRESSION)
+ *
+ * // Default compression, GZIP format
+ * val d3 = Deflater(JZlib.Z_DEFAULT_COMPRESSION, JZlib.W_GZIP)
+ *
+ * // GZIP shorthand
+ * val d4 = Deflater.gzip()
+ * }}}
+ */
+object Deflater {
+
+  /**
+   * Creates a [[Deflater]] initialized with default compression level ([[JZlib.Z_DEFAULT_COMPRESSION]]) and zlib
+   * wrapping (RFC 1950).
+   *
+   * Equivalent to:
+   * {{{
+   * val d = new Deflater()
+   * d.init(JZlib.Z_DEFAULT_COMPRESSION)
+   * }}}
+   *
+   * @return
+   *   a ready-to-use `Deflater`
+   */
+  def apply(): Deflater = {
+    val d = new Deflater()
+    d.init(JZlib.Z_DEFAULT_COMPRESSION)
+    d
+  }
+
+  /**
+   * Creates a [[Deflater]] initialized with the specified compression level and zlib wrapping (RFC 1950).
+   *
+   * @param level
+   *   compression level: [[JZlib.Z_NO_COMPRESSION]] (0) through [[JZlib.Z_BEST_COMPRESSION]] (9), or
+   *   [[JZlib.Z_DEFAULT_COMPRESSION]] (-1)
+   * @return
+   *   a ready-to-use `Deflater`
+   */
+  def apply(level: Int): Deflater = {
+    val d = new Deflater()
+    d.init(level)
+    d
+  }
+
+  /**
+   * Creates a [[Deflater]] initialized with the specified compression level and wrapper type.
+   *
+   * Uses the default window size (15) and maximum memory level (9).
+   *
+   * @param level
+   *   compression level: [[JZlib.Z_NO_COMPRESSION]] (0) through [[JZlib.Z_BEST_COMPRESSION]] (9), or
+   *   [[JZlib.Z_DEFAULT_COMPRESSION]] (-1)
+   * @param wrapperType
+   *   output format: [[JZlib.W_ZLIB]], [[JZlib.W_GZIP]], or [[JZlib.W_NONE]]. [[JZlib.W_ANY]] is invalid for
+   *   compression and causes [[JZlib.Z_STREAM_ERROR]].
+   * @return
+   *   a ready-to-use `Deflater`
+   */
+  def apply(level: Int, wrapperType: JZlib.WrapperType): Deflater = {
+    val d = new Deflater()
+    d.init(level, 15, 9, wrapperType)
+    d
+  }
+
+  /**
+   * Creates a [[Deflater]] configured for GZIP output (RFC 1952).
+   *
+   * This is a convenience shorthand for `Deflater(level, JZlib.W_GZIP)`.
+   *
+   * @param level
+   *   compression level (defaults to [[JZlib.Z_DEFAULT_COMPRESSION]])
+   * @return
+   *   a ready-to-use `Deflater` that produces GZIP-wrapped output
+   */
+  def gzip(level: Int = JZlib.Z_DEFAULT_COMPRESSION): Deflater = {
+    val d = new Deflater()
+    d.init(level, 15 + 16) // 15 + 16 = GZIP wrapping
+    d
+  }
+}
