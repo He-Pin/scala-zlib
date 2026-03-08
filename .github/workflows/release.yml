@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Test all platforms
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Clang/LLVM
+        run: sudo apt-get update && sudo apt-get install -y clang libstdc++-12-dev
+      - name: Cache Mill
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/mill
+            out/
+          key: mill-release-${{ runner.os }}-${{ hashFiles('build.sc', '.mill-version') }}
+      - name: Test all
+        run: ./mill __.test
+
+  publish:
+    name: Publish to Maven Central
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Cache Mill
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/mill
+            out/
+          key: mill-publish-${{ runner.os }}-${{ hashFiles('build.sc', '.mill-version') }}
+      - name: Publish
+        env:
+          MILL_PGP_SECRET_KEY: ${{ secrets.MILL_PGP_SECRET_KEY }}
+          MILL_PGP_PASSPHRASE: ${{ secrets.MILL_PGP_PASSPHRASE }}
+          MILL_SONATYPE_USERNAME: ${{ secrets.MILL_SONATYPE_USERNAME }}
+          MILL_SONATYPE_PASSWORD: ${{ secrets.MILL_SONATYPE_PASSWORD }}
+        run: |
+          ./mill __.publishArtifacts
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [test, publish]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          draft: false
