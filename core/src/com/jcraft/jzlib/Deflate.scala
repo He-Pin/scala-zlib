@@ -616,10 +616,27 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     if (eof) { bi_windup() }
   }
 
+  private[jzlib] def slide_hash(): Unit = {
+    var n = hash_size
+    var p = n
+    do {
+      p -= 1
+      val m = head(p) & 0xffff
+      head(p) = (if (m >= w_size) (m - w_size).toShort else 0)
+      n -= 1
+    } while (n != 0)
+    n = w_size
+    p = n
+    do {
+      p -= 1
+      val m = prev(p) & 0xffff
+      prev(p) = (if (m >= w_size) (m - w_size).toShort else 0)
+      n -= 1
+    } while (n != 0)
+  }
+
   private[jzlib] def fill_window(): Unit = {
     var n    = 0
-    var m    = 0
-    var p    = 0
     var more = 0
     do {
       more = window_size - lookahead - strstart
@@ -630,20 +647,9 @@ private[jzlib] final class Deflate(var strm: ZStream) {
         match_start -= w_size
         strstart    -= w_size
         block_start -= w_size
-        n = hash_size; p = n
-        do {
-          p -= 1
-          m = head(p) & 0xffff
-          head(p) = (if (m >= w_size) (m - w_size).toShort else 0)
-          n -= 1
-        } while (n != 0)
-        n = w_size; p = n
-        do {
-          p -= 1
-          m = prev(p) & 0xffff
-          prev(p) = (if (m >= w_size) (m - w_size).toShort else 0)
-          n -= 1
-        } while (n != 0)
+        if (level > 0) {
+          slide_hash()
+        }
         more += w_size
       }
       if (strm.avail_in == 0) return
@@ -799,7 +805,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     val limit        = if (strstart > w_size - MIN_LOOKAHEAD) strstart - (w_size - MIN_LOOKAHEAD) else 0
     var nm           = nice_match
     val wmask        = w_mask
-    val strend       = strstart + MAX_MATCH
+    val strend       = strstart + (if (lookahead < MAX_MATCH) lookahead else MAX_MATCH)
     var scan_end1    = window(scan + best_len - 1)
     var scan_end     = window(scan + best_len)
     var cur          = cur_match
@@ -866,7 +872,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     else if (wb > 15) { wrap = 2; wb -= 16; strm.adler = new CRC32() }
     if (memLevel < 1 || memLevel > MAX_MEM_LEVEL || method != Z_DEFLATED ||
         wb < 8 || wb > 15 || lvl < 0 || lvl > 9 ||
-        strategy < 0 || strategy > Z_HUFFMAN_ONLY ||
+        strategy < 0 || strategy > Z_FIXED ||
         (wb == 8 && wrap != 1)) {
       return Z_STREAM_ERROR
     }
@@ -904,7 +910,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     if (wrap < 0) { wrap = -wrap }
     status     = if (wrap == 0) BUSY_STATE else INIT_STATE
     strm.adler.reset()
-    last_flush = Z_NO_FLUSH
+    last_flush = -2
     tr_init()
     lm_init()
     Z_OK
@@ -965,13 +971,22 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     var err = Z_OK
     var lv  = _level
     if (lv == Z_DEFAULT_COMPRESSION) { lv = 6 }
-    if (lv < 0 || lv > 9 || _strategy < 0 || _strategy > Z_HUFFMAN_ONLY) {
+    if (lv < 0 || lv > 9 || _strategy < 0 || _strategy > Z_FIXED) {
       return Z_STREAM_ERROR
     }
-    if (config_table(level).func != config_table(lv).func && strm.total_in != 0) {
+    if ((strategy != _strategy || config_table(level).func != config_table(lv).func) &&
+        last_flush != -2) {
       err = strm.deflate(Z_PARTIAL_FLUSH)
+      if (err == Z_STREAM_ERROR) return err
+      if (strm.avail_in != 0 || (strstart - block_start) + lookahead != 0)
+        return Z_BUF_ERROR
     }
     if (level != lv) {
+      if (level == 0) {
+        // Clear hash table since hash entries are stale from level 0 operation
+        var i = 0
+        while (i < hash_size) { head(i) = 0; i += 1 }
+      }
       level            = lv
       max_lazy_match   = config_table(level).max_lazy
       good_match       = config_table(level).good_length

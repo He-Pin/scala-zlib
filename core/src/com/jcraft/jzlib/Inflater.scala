@@ -337,19 +337,16 @@ final class Inflater extends ZStream with AutoCloseable {
   /**
    * Returns the sliding dictionary being maintained by inflate.
    *
-   * Copies the dictionary to the provided buffer and sets `dictLength(0)` to
-   * the number of bytes in the dictionary. If `dictionary` is `null`, only the
-   * dictionary length is returned without copying. A 32768-byte buffer is
-   * always sufficient.
+   * Copies the dictionary to the provided buffer and sets `dictLength(0)` to the number of bytes in the dictionary. If
+   * `dictionary` is `null`, only the dictionary length is returned without copying. A 32768-byte buffer is always
+   * sufficient.
    *
    * @param dictionary
    *   buffer to receive the dictionary data, or `null` to query length only
    * @param dictLength
-   *   if non-null, `dictLength(0)` is set to the number of bytes in the
-   *   dictionary
+   *   if non-null, `dictLength(0)` is set to the number of bytes in the dictionary
    * @return
-   *   [[JZlib.Z_OK]] on success, or [[JZlib.Z_STREAM_ERROR]] if the inflater
-   *   is not initialized
+   *   [[JZlib.Z_OK]] on success, or [[JZlib.Z_STREAM_ERROR]] if the inflater is not initialized
    */
   def getDictionary(dictionary: Array[Byte], dictLength: Array[Int]): Int = {
     if (istate == null)
