@@ -323,4 +323,8 @@ final class Inflater extends ZStream {
 
   /** Returns `true` when decompression has completed (inflate state is DONE). */
   override def finished(): Boolean = istate.mode == 12 /*DONE*/
+
+  /** Returns a string like `Inflater(finished=false, avail_in=0, avail_out=1024, total_in=0, total_out=0)`. */
+  override def toString: String =
+    s"Inflater(finished=${_finished}, avail_in=$avail_in, avail_out=$avail_out, total_in=$total_in, total_out=$total_out)"
 }

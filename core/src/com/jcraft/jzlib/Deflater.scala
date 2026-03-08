@@ -382,4 +382,8 @@ final class Deflater extends ZStream {
     this._finished = src._finished
     Deflate.deflateCopy(this, src)
   }
+
+  /** Returns a string like `Deflater(finished=false, avail_in=0, avail_out=1024, total_in=0, total_out=0)`. */
+  override def toString: String =
+    s"Deflater(finished=${_finished}, avail_in=$avail_in, avail_out=$avail_out, total_in=$total_in, total_out=$total_out)"
 }
