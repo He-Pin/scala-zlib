@@ -9,31 +9,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - Cross-platform stream classes — all stream wrappers now available on JVM, Scala.js, Scala Native, and WASM
+- `AutoCloseable` on `Deflater` and `Inflater` — enables `scala.util.Using` and try-with-resources
+- Companion object factories: `Deflater()`, `Deflater(level)`, `Deflater(level, wrapperType)`, `Deflater.gzip()`, `Inflater()`, `Inflater(wrapperType)`, `Inflater.gzip()`, `Inflater.auto()`
+- `GZIPInputStream` multi-member support — reads concatenated GZIP streams per RFC 1952 §2.2
+- `@inline` on hot-path methods in `Deflate` (`smaller`, `put_byte`, `put_short`, `send_code`, `bi_flush`)
 - `JZlib.deflateBound()` / `compressBound()` — upper bound on compressed size
 - `JZlib.compress()` / `uncompress()` — one-shot compression utilities
 - `JZlib.getErrorDescription()` — human-readable error messages for zlib return codes
 - `Z_RLE` and `Z_FIXED` compression strategy constants
 - `toString` on `Deflater` and `Inflater` for debugging (shows stream state summary)
+- Runnable Scala examples (`example/` module): `BasicCompression`, `GZIPExample`, `ChecksumExample`, `UtilityExample`
 - Cross-platform usage examples (`example/` module)
-- Release workflow for Maven Central publishing
+- Release workflow for Maven Central publishing with downloadable artifacts (JAR, source, doc)
 
 ### Fixed
+- Concatenated/multi-member GZIP streams now handled correctly by `GZIPInputStream`
 - Integer overflow in `compress` / `uncompress` when computing output buffer sizes
 - CI Java 25 compatibility and fail-fast behavior
 
 ### Changed
 - Upgraded Mill from 0.12.11 to 1.1.2
 - Build file renamed from `build.sc` to `build.mill`
+- CI: added Windows Scala Native testing
+- CI: optimized caching strategy (platform and Scala version specific)
+- CI: enhanced release workflow with artifact upload to GitHub Releases
 - CI: Java 25 now tested natively (not just bytecode compat)
 - CI: updated workflows for Mill 1.1.2
 
 ### Documentation
+- Comprehensive Scaladoc on `ZStream` deprecated class
 - Scaladoc added to all core public APIs (`Deflater`, `Inflater`, `JZlib`, `ZStream`, `GZIPHeader`, exceptions)
 - Scaladoc added to JVM stream classes (`DeflaterOutputStream`, `InflaterInputStream`, `GZIPOutputStream`, `GZIPInputStream`, `ZOutputStream`, `ZInputStream`)
 - Deprecated API migration guide added to README
+- Gradle dependency snippet and Performance section added to README
 - Platform support documentation updated for cross-platform stream classes
 
 ### Testing
+- `CompanionObjectSuite` — tests for `Deflater`/`Inflater` companion object factories
+- `GZIPMultiMemberSuite` — tests for concatenated/multi-member GZIP stream reading
+- Edge case tests for flush modes, checksums, and utilities
 - `JRubyCompatSuite` — jruby API compatibility test suite (JVM)
 - `JZlibUtilSuite` — tests for `deflateBound`, `compressBound`, `compress`, `uncompress`
 - `StrategyConstantsSuite` — tests for `Z_RLE` and `Z_FIXED` strategy constants

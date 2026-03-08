@@ -56,7 +56,7 @@ scala-zlib uses the same package name (`com.jcraft.jzlib`), class names, and met
 
 **Requirements**: Java 17+ · Scala 2.13.16 or 3.3.7 · Scala.js 1.20.0 · Scala Native 0.5.10
 
-All classes are available on all platforms. Stream classes extend `java.io.FilterInputStream`/`java.io.FilterOutputStream`, which are supported across JVM, Scala.js, Scala Native, and WASM.
+All classes are available on all platforms. Stream classes extend `java.io.FilterInputStream`/`java.io.FilterOutputStream`, which are supported across JVM, Scala.js, Scala Native, and WASM. Scala Native is CI-tested on both Linux and Windows.
 
 ## Upstream Project
 

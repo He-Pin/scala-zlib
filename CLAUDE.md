@@ -32,8 +32,8 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 |-------|--------|-------------|
 | `JZlib` | core | Constants (`Z_RLE`, `Z_FIXED`, etc.), `WrapperType` enum, `adler32_combine`, `crc32_combine`, `deflateBound`, `compressBound`, `compress`, `uncompress`, `getErrorDescription` |
 | `ZStream` | core | Low-level stream state — **deprecated**, use `Deflater`/`Inflater` |
-| `Deflater` | core | High-level compression API (has `toString` for debugging) |
-| `Inflater` | core | High-level decompression API (has `toString` for debugging) |
+| `Deflater` | core | High-level compression API — `AutoCloseable`, `toString`, companion factories (`Deflater()`, `Deflater.gzip()`) |
+| `Inflater` | core | High-level decompression API — `AutoCloseable`, `toString`, companion factories (`Inflater()`, `Inflater.auto()`, `Inflater.gzip()`) |
 | `Deflate` | core | Internal deflate algorithm (not public API) |
 | `Inflate` | core | Internal inflate algorithm (not public API) |
 | `InfBlocks` | core | Inflate block decoder (internal) |
@@ -49,7 +49,7 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 | `DeflaterOutputStream` | core | Compressing `FilterOutputStream` |
 | `InflaterInputStream` | core | Decompressing `FilterInputStream` |
 | `GZIPOutputStream` | core | GZIP-format `DeflaterOutputStream` |
-| `GZIPInputStream` | core | GZIP-format `InflaterInputStream` |
+| `GZIPInputStream` | core | GZIP-format `InflaterInputStream` — supports concatenated/multi-member streams |
 | `ZOutputStream` | core | Legacy compressing stream — **deprecated** |
 | `ZInputStream` | core | Legacy decompressing stream — **deprecated** |
 
@@ -271,6 +271,40 @@ Use `JZlib.getErrorDescription(code)` to get a human-readable error message for 
 | `JZlib.uncompress(data)` | One-shot decompression (returns decompressed byte array) |
 | `JZlib.getErrorDescription(code)` | Human-readable error message for a zlib return code |
 
+### Companion Object Factories
+
+Convenience factories that combine construction and initialization into a single call:
+
+| Factory | Description |
+|---------|-------------|
+| `Deflater()` | Default compression with zlib wrapping |
+| `Deflater(level)` | Specified compression level with zlib wrapping |
+| `Deflater(level, wrapperType)` | Full control with wrapper type selection |
+| `Deflater.gzip(level)` | GZIP output (default compression if level omitted) |
+| `Inflater()` | Default zlib-wrapped input |
+| `Inflater(wrapperType)` | Specified wrapper type |
+| `Inflater.gzip()` | GZIP input decompression |
+| `Inflater.auto()` | Auto-detects ZLIB or GZIP format |
+
+### AutoCloseable / Resource Management
+
+`Deflater` and `Inflater` implement `AutoCloseable`. The `close()` method delegates to `end()`, enabling:
+
+```scala
+import scala.util.Using
+
+Using(Deflater(JZlib.Z_DEFAULT_COMPRESSION)) { deflater =>
+  deflater.setInput(data)
+  deflater.setOutput(output)
+  deflater.deflate(JZlib.Z_FINISH)
+}
+```
+
+### Performance Annotations
+
+Hot-path methods in `Deflate.scala` are annotated with `@inline`:
+- `smaller`, `put_byte`, `put_short`, `send_code`, `bi_flush`
+
 ### Strategy Constants
 
 | Constant | Value | Description |
@@ -287,8 +321,10 @@ Use `JZlib.getErrorDescription(code)` to get a human-readable error message for 
 |-------|--------|-------------|
 | `Adler32Suite` | core | Adler-32 checksum correctness and combine |
 | `CRC32Suite` | core | CRC-32 checksum correctness and combine |
+| `CompanionObjectSuite` | core | Companion object factory methods for `Deflater` and `Inflater` |
 | `DeflateInflateSuite` | core | Round-trip deflate/inflate across levels, strategies, and wrapper types |
 | `ErrorDescriptionSuite` | core | `getErrorDescription` return values for all return codes |
+| `GZIPMultiMemberSuite` | core | Concatenated/multi-member GZIP stream reading |
 | `JZlibUtilSuite` | core | `deflateBound`, `compressBound`, `compress`, `uncompress` |
 | `StrategyConstantsSuite` | core | `Z_RLE` and `Z_FIXED` strategy constants |
 | `WrapperTypeSuite` | core | Wrapper type edge cases |
@@ -329,3 +365,11 @@ When porting an upstream jzlib commit or adding a feature:
 | Mill version | `.mill-version` (1.1.2) |
 | Scalafmt config | `.scalafmt.conf` |
 | CI workflow | `.github/workflows/ci.yml` |
+| Release workflow | `.github/workflows/release.yml` |
+
+## CI / Release
+
+- **CI** tests: format check, JVM (Java 17/21/25), Scala.js, Scala Native (Linux + Windows), WASM
+- **Windows Scala Native** is CI-tested on every push/PR
+- **Caching**: platform and Scala version specific cache keys for Mill and Coursier
+- **Release workflow**: publishes to Maven Central and uploads JAR/source/doc artifacts to GitHub Releases
