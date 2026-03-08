@@ -10,6 +10,7 @@ import mill.scalalib.publish._
 import mill.contrib.jmh.JmhModule
 
 val scalaVersions = Seq("2.13.16", "3.3.7")
+val munitVersion  = "1.0.3"
 
 /** Shared compiler options and formatting for all modules. */
 trait ZlibModule extends ScalaModule with ScalafmtModule {
@@ -37,7 +38,7 @@ trait CoreModule extends ZlibModule {
   def artifactName = "scala-zlib-core"
 
   trait CoreTests extends ScalaTests with TestModule.Munit {
-    def ivyDeps = Agg(ivy"org.scalameta::munit::1.0.3")
+    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
   }
 }
 
@@ -46,7 +47,7 @@ trait JvmStreamsModule extends ZlibModule {
   def artifactName = "scala-zlib-jvm"
 
   trait JvmTests extends ScalaTests with TestModule.Munit {
-    def ivyDeps = Agg(ivy"org.scalameta::munit::1.0.3")
+    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
   }
 }
 
@@ -80,7 +81,7 @@ object coreJS extends Cross[CoreJsModule](scalaVersions)
 trait CoreJsModule extends CrossScalaModule with CoreModule with ScalaJSModule {
   def scalaJSVersion = "1.20.0"
   object test extends ScalaJSTests with TestModule.Munit {
-    def ivyDeps = Agg(ivy"org.scalameta::munit::1.0.3")
+    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
   }
 }
 
@@ -93,7 +94,7 @@ trait CoreWasmModule extends CrossScalaModule with CoreModule with ScalaJSModule
   override def moduleSplitStyle = ModuleSplitStyle.FewestModules
   override def scalaJSExperimentalUseWebAssembly = true
   object test extends ScalaJSTests with TestModule.Munit {
-    def ivyDeps = Agg(ivy"org.scalameta::munit::1.0.3")
+    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
   }
 }
 
@@ -103,6 +104,6 @@ object coreNative extends Cross[CoreNativeModule](scalaVersions)
 trait CoreNativeModule extends CrossScalaModule with CoreModule with ScalaNativeModule {
   def scalaNativeVersion = "0.5.10"
   object test extends ScalaNativeTests with TestModule.Munit {
-    def ivyDeps = Agg(ivy"org.scalameta::munit::1.0.3")
+    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
   }
 }
