@@ -61,12 +61,15 @@ import JZlib._
  * val deflater = new Deflater(JZlib.Z_DEFAULT_COMPRESSION, 15, 8, JZlib.W_GZIP)
  * }}}
  *
+ * Implements [[java.lang.AutoCloseable]] so that instances can be used with `scala.util.Using` (Scala) or
+ * try-with-resources (Java). The [[close]] method delegates to [[end]] and is safe to call multiple times.
+ *
  * @see
  *   [[Inflater]] for decompression
  * @see
  *   [[JZlib]] for compression levels, flush modes, and return codes
  */
-final class Deflater extends ZStream {
+final class Deflater extends ZStream with AutoCloseable {
 
   private object Const {
     final val MAX_WBITS     = 15
@@ -382,6 +385,14 @@ final class Deflater extends ZStream {
     this._finished = src._finished
     Deflate.deflateCopy(this, src)
   }
+
+  /**
+   * Closes this deflater and releases all resources.
+   *
+   * Equivalent to calling [[end]]. This method is idempotent — calling it multiple times is safe. It never throws an
+   * exception, making it suitable for use in `scala.util.Using` or try-with-resources blocks.
+   */
+  override def close(): Unit = end()
 
   /** Returns a string like `Deflater(finished=false, avail_in=0, avail_out=1024, total_in=0, total_out=0)`. */
   override def toString: String =

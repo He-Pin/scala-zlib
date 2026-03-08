@@ -60,12 +60,15 @@ import JZlib._
  * val inflater = new Inflater(JZlib.W_ANY)
  * }}}
  *
+ * Implements [[java.lang.AutoCloseable]] so that instances can be used with `scala.util.Using` (Scala) or
+ * try-with-resources (Java). The [[close]] method delegates to [[end]] and is safe to call multiple times.
+ *
  * @see
  *   [[Deflater]] for compression
  * @see
  *   [[JZlib]] for constants and wrapper types
  */
-final class Inflater extends ZStream {
+final class Inflater extends ZStream with AutoCloseable {
 
   private object Const {
     final val MAX_WBITS = 15
@@ -323,6 +326,14 @@ final class Inflater extends ZStream {
 
   /** Returns `true` when decompression has completed (inflate state is DONE). */
   override def finished(): Boolean = istate.mode == 12 /*DONE*/
+
+  /**
+   * Closes this inflater and releases all resources.
+   *
+   * Equivalent to calling [[end]]. This method is idempotent — calling it multiple times is safe. It never throws an
+   * exception, making it suitable for use in `scala.util.Using` or try-with-resources blocks.
+   */
+  override def close(): Unit = end()
 
   /** Returns a string like `Inflater(finished=false, avail_in=0, avail_out=1024, total_in=0, total_out=0)`. */
   override def toString: String =
