@@ -257,7 +257,10 @@ final class Inflater extends ZStream with AutoCloseable {
    *   if a preset dictionary is required, or a negative error code
    */
   override def inflate(f: Int): Int = {
-    if (istate == null) return Z_STREAM_ERROR
+    if (istate == null) {
+      msg = "inflate: not initialized — call init() before inflate()"
+      return Z_STREAM_ERROR
+    }
     val ret = istate.inflate(f)
     if (ret == Z_STREAM_END)
       _finished = true
@@ -275,7 +278,10 @@ final class Inflater extends ZStream with AutoCloseable {
    */
   override def end(): Int = {
     _finished = true
-    if (istate == null) return Z_STREAM_ERROR
+    if (istate == null) {
+      msg = "inflate end: not initialized"
+      return Z_STREAM_ERROR
+    }
     val ret = istate.inflateEnd()
     // istate = null  // intentionally left commented as in original
     ret
@@ -288,8 +294,10 @@ final class Inflater extends ZStream with AutoCloseable {
    *   [[JZlib.Z_OK]] if a sync point was found
    */
   def sync(): Int = {
-    if (istate == null)
+    if (istate == null) {
+      msg = "inflateSync: not initialized"
       return Z_STREAM_ERROR
+    }
     istate.inflateSync()
   }
 
@@ -319,9 +327,34 @@ final class Inflater extends ZStream with AutoCloseable {
    *   [[JZlib.Z_OK]] on success, or [[JZlib.Z_DATA_ERROR]] if the dictionary does not match
    */
   def setDictionary(dictionary: Array[Byte], dictLength: Int): Int = {
+    if (istate == null) {
+      msg = "inflateSetDictionary: not initialized"
+      return Z_STREAM_ERROR
+    }
+    istate.inflateSetDictionary(dictionary, dictLength)
+  }
+
+  /**
+   * Returns the sliding dictionary being maintained by inflate.
+   *
+   * Copies the dictionary to the provided buffer and sets `dictLength(0)` to
+   * the number of bytes in the dictionary. If `dictionary` is `null`, only the
+   * dictionary length is returned without copying. A 32768-byte buffer is
+   * always sufficient.
+   *
+   * @param dictionary
+   *   buffer to receive the dictionary data, or `null` to query length only
+   * @param dictLength
+   *   if non-null, `dictLength(0)` is set to the number of bytes in the
+   *   dictionary
+   * @return
+   *   [[JZlib.Z_OK]] on success, or [[JZlib.Z_STREAM_ERROR]] if the inflater
+   *   is not initialized
+   */
+  def getDictionary(dictionary: Array[Byte], dictLength: Array[Int]): Int = {
     if (istate == null)
       return Z_STREAM_ERROR
-    istate.inflateSetDictionary(dictionary, dictLength)
+    istate.inflateGetDictionary(dictionary, dictLength)
   }
 
   /** Returns `true` when decompression has completed (inflate state is DONE). */

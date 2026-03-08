@@ -128,6 +128,10 @@ object Adler32 {
    */
   // The following logic has come from zlib.1.2.
   def combine(adler1: Long, adler2: Long, len2: Long): Long = {
+    if (len2 < 0)
+      throw new IllegalArgumentException(
+        s"len2 must be non-negative, got $len2",
+      )
     val BASEL      = 65521L
     var sum1: Long = 0L
     var sum2: Long = 0L

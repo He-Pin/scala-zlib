@@ -40,9 +40,12 @@ package com.jcraft.jzlib
  * Produces the same results as `java.util.zip.CRC32` but works on all Scala platforms (JVM, Scala.js, Scala Native,
  * WASM).
  *
- * Instances are '''not''' thread-safe; each thread should use its own instance.
+ * The update method uses a slicing-by-4 algorithm that processes four bytes per loop iteration for improved throughput
+ * on bulk data.
  *
- * To merge checksums computed over separate data segments, use [[CRC32$.combine `CRC32.combine`]].
+ * Instances are not thread-safe; each thread should use its own instance.
+ *
+ * To merge checksums computed over separate data segments, use `CRC32.combine`.
  */
 final class CRC32 extends Checksum {
 
@@ -52,11 +55,29 @@ final class CRC32 extends Checksum {
     var c   = ~v
     var i   = index
     var rem = len
+
+    // slicing-by-4: process four bytes per iteration
+    while (rem >= 4) {
+      val word = (buf(i) & 0xff) |
+        ((buf(i + 1) & 0xff) << 8) |
+        ((buf(i + 2) & 0xff) << 16) |
+        ((buf(i + 3) & 0xff) << 24)
+      val w    = c ^ word
+      c = CRC32.crc_slice(3)(w & 0xff) ^
+        CRC32.crc_slice(2)((w >>> 8) & 0xff) ^
+        CRC32.crc_slice(1)((w >>> 16) & 0xff) ^
+        CRC32.crc_slice(0)((w >>> 24) & 0xff)
+      i += 4
+      rem -= 4
+    }
+
+    // process remaining bytes one at a time
     while (rem > 0) {
       rem -= 1
       c = CRC32.crc_table((c ^ buf(i)) & 0xff) ^ (c >>> 8)
       i += 1
     }
+
     v = ~c
   }
 
@@ -73,8 +94,15 @@ final class CRC32 extends Checksum {
   }
 }
 
-/** Companion providing the CRC-32 lookup table and [[combine]] utility. */
+/**
+ * Companion providing the CRC-32 lookup table, `combine` utility, and the precomputed-operator API (`combineGen` /
+ * `combineOp`).
+ */
 object CRC32 {
+
+  /** Standard CRC-32 reflected polynomial. */
+  private final val POLY: Int = 0xedb88320
+
   /*
    * The following logic has come from RFC1952.
    */
@@ -86,7 +114,7 @@ object CRC32 {
       var k = 8
       while (k > 0) {
         k -= 1
-        if ((c & 1) != 0) c = 0xedb88320 ^ (c >>> 1)
+        if ((c & 1) != 0) c = POLY ^ (c >>> 1)
         else c = c >>> 1
       }
       tbl(n) = c
@@ -95,62 +123,136 @@ object CRC32 {
     tbl
   }
 
-  private final val GF2_DIM = 32
+  /**
+   * Four 256-entry tables for slicing-by-4 CRC computation.
+   *
+   * `crc_slice(0)` is the standard byte-at-a-time table (identical to `crc_table`). `crc_slice(k)(n)` is the CRC of
+   * byte `n` followed by `k` zero bytes.
+   */
+  private[jzlib] val crc_slice: Array[Array[Int]] = {
+    val tables = Array.ofDim[Int](4, 256)
+    System.arraycopy(crc_table, 0, tables(0), 0, 256)
+    var k      = 1
+    while (k < 4) {
+      var n = 0
+      while (n < 256) {
+        var c = tables(k - 1)(n)
+        c = crc_table(c & 0xff) ^ (c >>> 8)
+        tables(k)(n) = c
+        n += 1
+      }
+      k += 1
+    }
+    tables
+  }
 
   /**
-   * Combines two CRC-32 checksums into the checksum of the concatenated data.
+   * Precomputed table of x^(2^i) mod p(x) for i in 0..31.
    *
-   * Given `crc1 = crc32(data1)` and `crc2 = crc32(data2)`, returns `crc32(data1 ++ data2)` without access to the
-   * original data.
+   * Used by `x2nmodp` and `combineGen` to avoid repeated squaring from scratch.
+   */
+  private val x2n_table: Array[Int] = {
+    val tbl = new Array[Int](32)
+    var p   = 1 << 30 // x^1
+    tbl(0) = p
+    var i   = 1
+    while (i < 32) {
+      p = multmodp(p, p)
+      tbl(i) = p
+      i += 1
+    }
+    tbl
+  }
+
+  /**
+   * Multiplies `a(x)` by `b(x)` modulo the CRC polynomial in GF(2).
    *
+   * Both operands use the reflected bit order (LSB = highest power). The method requires `a != 0`.
+   */
+  private[jzlib] def multmodp(a: Int, b: Int): Int = {
+    var product = 0
+    var aa      = a
+    var bb      = b
+    while (aa != 0) {
+      if ((aa & 1) != 0) product ^= bb
+      aa >>>= 1
+      // shift b left by one in reflected representation
+      bb = if ((bb & 1) != 0) POLY ^ (bb >>> 1) else bb >>> 1
+    }
+    product
+  }
+
+  /**
+   * Returns x^(n + k) mod p(x) using the precomputed `x2n_table`.
+   *
+   * The parameter `k` shifts the starting power; for `combine` and `combineGen`, `k = 3` so that the result is x^(n+3)
+   * (accounting for the three powers consumed by the polynomial itself).
+   */
+  private[jzlib] def x2nmodp(n: Long, k: Int): Int      = {
+    var p  = x2n_table(k)
+    var nn = n
+    var i  = k
+    while (nn != 0) {
+      i += 1
+      if ((nn & 1) != 0) {
+        p = multmodp(x2n_table(i), p)
+      }
+      nn >>>= 1
+    }
+    p
+  }
+  // The following logic has come from zlib.1.2.
+  def combine(crc1: Long, crc2: Long, len2: Long): Long = {
+    if (len2 < 0)
+      throw new IllegalArgumentException(
+        s"len2 must be non-negative, got $len2",
+      )
+    if (len2 == 0) return crc1
+    combineOp(combineGen(len2), crc1, crc2)
+  }
+
+  /**
+   * Pre-computes a reusable combine operator for a fixed second-segment length.
+   *
+   * The returned `Int` encodes x^(len2 + 3) mod p(x) and can be applied repeatedly via `combineOp` without recomputing.
+   *
+   * @param len2
+   *   byte length of the second segment (must be positive)
+   * @return
+   *   opaque operator value for use with `combineOp`
+   */
+  def combineGen(len2: Long): Int = x2nmodp(len2, 3)
+
+  /**
+   * Applies a pre-computed combine operator to merge two CRC-32 values.
+   *
+   * @param op
+   *   operator from `combineGen`
    * @param crc1
    *   checksum of the first segment
    * @param crc2
    *   checksum of the second segment
-   * @param len2
-   *   byte length of the second segment
    * @return
    *   combined CRC-32 checksum
    */
-  // The following logic has come from zlib.1.2.
-  def combine(crc1: Long, crc2: Long, len2: Long): Long = {
-    if (len2 <= 0) return crc1
+  def combineOp(op: Int, crc1: Long, crc2: Long): Long = {
+    (multmodp(op, crc1.toInt) ^ crc2.toInt) & 0xffffffffL
+  }
 
-    var c1 = crc1
-    var l2 = len2
+  private final val GF2_DIM = 32
 
-    val even = new Array[Long](GF2_DIM)
-    val odd  = new Array[Long](GF2_DIM)
-
-    // put operator for one zero bit in odd
-    odd(0) = 0xedb88320L
-    var row = 1L
-    var n   = 1
+  /**
+   * Squares a GF(2) matrix in place.
+   *
+   * Deprecated: retained for backward compatibility. Internally, the library now uses `multmodp` / `x2nmodp` for the
+   * combine operation.
+   */
+  @deprecated("Use combine / combineGen / combineOp instead", "0.1.0")
+  def gf2_matrix_square(square: Array[Long], mat: Array[Long]): Unit = {
+    var n = 0
     while (n < GF2_DIM) {
-      odd(n) = row; row <<= 1; n += 1
+      square(n) = gf2_matrix_times(mat, mat(n)); n += 1
     }
-
-    // put operator for two zero bits in even
-    gf2_matrix_square(even, odd)
-    // put operator for four zero bits in odd
-    gf2_matrix_square(odd, even)
-
-    // apply len2 zeros to crc1
-    var done = false
-    while (!done) {
-      gf2_matrix_square(even, odd)
-      if ((l2 & 1) != 0) c1 = gf2_matrix_times(even, c1)
-      l2 >>= 1
-      if (l2 == 0) { done = true }
-      else {
-        gf2_matrix_square(odd, even)
-        if ((l2 & 1) != 0) c1 = gf2_matrix_times(odd, c1)
-        l2 >>= 1
-        if (l2 == 0) done = true
-      }
-    }
-
-    c1 ^ crc2
   }
 
   private def gf2_matrix_times(mat: Array[Long], vec: Long): Long = {
@@ -162,13 +264,6 @@ object CRC32 {
       v >>= 1; index += 1
     }
     sum
-  }
-
-  def gf2_matrix_square(square: Array[Long], mat: Array[Long]): Unit = {
-    var n = 0
-    while (n < GF2_DIM) {
-      square(n) = gf2_matrix_times(mat, mat(n)); n += 1
-    }
   }
 
   def getCRC32Table: Array[Int] = {

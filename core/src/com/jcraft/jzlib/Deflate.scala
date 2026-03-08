@@ -82,6 +82,8 @@ object Deflate {
   private final val PRESET_DICT        = 0x20
   private final val Z_FILTERED         = 1
   private final val Z_HUFFMAN_ONLY     = 2
+  private final val Z_RLE              = 3
+  private final val Z_FIXED            = 4
   private final val Z_DEFAULT_STRATEGY = 0
 
   private final val Z_NO_FLUSH      = 0
@@ -216,10 +218,11 @@ private[jzlib] final class Deflate(var strm: ZStream) {
   var heap_len:  Int = 0
   var heap_max:  Int = 0
   var depth:     Array[Byte] = new Array[Byte](2 * L_CODES + 1)
-  var l_buf:     Array[Byte] = null
+  var sym_buf:    Array[Byte] = null
   var lit_bufsize:  Int = 0
   var last_lit:     Int = 0
-  var d_buf:        Int = 0
+  var sym_next:     Int = 0
+  var sym_end:      Int = 0
   var opt_len:      Int = 0
   var static_len:   Int = 0
   var matches:      Int = 0
@@ -271,6 +274,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     opt_len    = 0
     static_len = 0
     last_lit   = 0
+    sym_next   = 0
     matches    = 0
   }
 
@@ -439,9 +443,9 @@ private[jzlib] final class Deflate(var strm: ZStream) {
   }
 
   private[jzlib] def _tr_tally(dist: Int, lc: Int): Boolean = {
-    pending_buf(d_buf + last_lit * 2)     = (dist >>> 8).toByte
-    pending_buf(d_buf + last_lit * 2 + 1) = dist.toByte
-    l_buf(last_lit) = lc.toByte; last_lit += 1
+    sym_buf(sym_next) = (dist & 0xff).toByte; sym_next += 1
+    sym_buf(sym_next) = ((dist >>> 8) & 0xff).toByte; sym_next += 1
+    sym_buf(sym_next) = lc.toByte; sym_next += 1
     if (dist == 0) {
       dyn_ltree(lc * 2) = (dyn_ltree(lc * 2) + 1).toShort
     } else {
@@ -462,7 +466,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
       out_length >>>= 3
       if (matches < (last_lit / 2) && out_length < in_length / 2) return true
     }
-    last_lit == lit_bufsize - 1
+    sym_next == sym_end
   }
 
   private[jzlib] def compress_block(ltree: Array[Short], dtree: Array[Short]): Unit = {
@@ -471,10 +475,10 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     var lx    = 0
     var code  = 0
     var extra = 0
-    if (last_lit != 0) {
+    if (sym_next != 0) {
       do {
-        dist = ((pending_buf(d_buf + lx * 2) << 8) & 0xff00) | (pending_buf(d_buf + lx * 2 + 1) & 0xff)
-        lc = l_buf(lx) & 0xff; lx += 1
+        dist = (sym_buf(lx) & 0xff) | ((sym_buf(lx + 1) & 0xff) << 8)
+        lc = sym_buf(lx + 2) & 0xff; lx += 3
         if (dist == 0) {
           send_code(lc, ltree)
         } else {
@@ -494,7 +498,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
             send_bits(dr, extra)
           }
         }
-      } while (lx < last_lit)
+      } while (lx < sym_next)
     }
     send_code(END_BLOCK, ltree)
     last_eob_len = ltree(END_BLOCK * 2 + 1)
@@ -593,7 +597,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
       max_blindex = build_bl_tree()
       opt_lenb    = (opt_len + 3 + 7) >>> 3
       static_lenb = (static_len + 3 + 7) >>> 3
-      if (static_lenb <= opt_lenb) opt_lenb = static_lenb
+      if (static_lenb <= opt_lenb || strategy == Z_FIXED) opt_lenb = static_lenb
     } else {
       opt_lenb    = stored_len + 5
       static_lenb = stored_len + 5
@@ -880,10 +884,10 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     prev              = new Array[Short](w_size)
     head              = new Array[Short](hash_size)
     lit_bufsize       = 1 << (memLevel + 6)
-    pending_buf       = new Array[Byte](lit_bufsize * 3)
-    pending_buf_size  = lit_bufsize * 3
-    d_buf             = lit_bufsize
-    l_buf             = new Array[Byte](lit_bufsize)
+    pending_buf       = new Array[Byte](lit_bufsize * 4)
+    pending_buf_size  = lit_bufsize * 4
+    sym_buf           = new Array[Byte](lit_bufsize * 3)
+    sym_end           = (lit_bufsize - 1) * 3
     this.level        = lvl
     this.strategy     = strategy
     this.method       = method.toByte
@@ -953,7 +957,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     if (status != INIT_STATE && status != BUSY_STATE && status != FINISH_STATE) {
       return Z_STREAM_ERROR
     }
-    pending_buf = null; l_buf = null; head = null; prev = null; window = null
+    pending_buf = null; sym_buf = null; head = null; prev = null; window = null
     if (status == BUSY_STATE) Z_DATA_ERROR else Z_OK
   }
 
@@ -1153,7 +1157,8 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     dest.heap_max         = this.heap_max
     dest.lit_bufsize      = this.lit_bufsize
     dest.last_lit         = this.last_lit
-    dest.d_buf            = this.d_buf
+    dest.sym_next         = this.sym_next
+    dest.sym_end          = this.sym_end
     dest.opt_len          = this.opt_len
     dest.static_len       = this.static_len
     dest.matches          = this.matches
@@ -1161,7 +1166,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     dest.bi_buf           = this.bi_buf
     dest.bi_valid         = this.bi_valid
     dest.pending_buf  = dup(this.pending_buf)
-    dest.l_buf        = dup(this.l_buf)
+    dest.sym_buf      = dup(this.sym_buf)
     dest.window       = dup(this.window)
     dest.prev         = dup(this.prev)
     dest.head         = dup(this.head)
