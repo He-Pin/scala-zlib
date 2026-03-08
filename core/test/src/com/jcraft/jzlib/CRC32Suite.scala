@@ -280,6 +280,15 @@ class CRC32Suite extends munit.FunSuite {
     assertEquals(CRC32.crc_slice(0).toSeq, CRC32.crc_table.toSeq)
   }
 
+  test("single-byte update matches array update") {
+    val data = "Hello, World!".getBytes("UTF-8")
+    val c1   = new CRC32
+    data.foreach(b => c1.update(b.toInt))
+    val c2   = new CRC32
+    c2.update(data, 0, data.length)
+    assertEquals(c1.getValue, c2.getValue)
+  }
+
   private def randomBytes(n: Int): Array[Byte] = {
     val rng = new scala.util.Random(42)
     Array.fill[Byte](n)(rng.nextInt(256).toByte)

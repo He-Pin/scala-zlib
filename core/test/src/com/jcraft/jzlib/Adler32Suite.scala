@@ -174,6 +174,15 @@ class Adler32Suite extends munit.FunSuite {
     assertEquals(adler.getValue, expected)
   }
 
+  test("single-byte update matches array update") {
+    val data = "Hello, World!".getBytes("UTF-8")
+    val a1   = new Adler32
+    data.foreach(b => a1.update(b.toInt))
+    val a2   = new Adler32
+    a2.update(data, 0, data.length)
+    assertEquals(a1.getValue, a2.getValue)
+  }
+
   private def randomBytes(n: Int): Array[Byte] = {
     val rng = new scala.util.Random(42)
     Array.fill[Byte](n)(rng.nextInt(256).toByte)

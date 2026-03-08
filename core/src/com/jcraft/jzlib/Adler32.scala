@@ -69,6 +69,12 @@ final class Adler32 extends Checksum {
   /** Returns the current Adler-32 checksum value. */
   def getValue: Long = (s2 << 16) | s1
 
+  /** Updates the Adler-32 checksum with a single byte. */
+  override def update(b: Int): Unit = {
+    s1 = (s1 + (b & 0xff)) % BASE
+    s2 = (s2 + s1)         % BASE
+  }
+
   /** Updates the checksum with the specified bytes from `buf`. */
   def update(buf: Array[Byte], index: Int, len: Int): Unit = {
     var i   = index

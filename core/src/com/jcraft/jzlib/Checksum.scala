@@ -47,6 +47,9 @@ trait Checksum {
   /** Updates the checksum with bytes from `buf(index)` to `buf(index + len - 1)`. */
   def update(buf: Array[Byte], index: Int, len: Int): Unit
 
+  /** Updates the checksum with a single byte. */
+  def update(b: Int): Unit = update(Array[Byte](b.toByte), 0, 1)
+
   /** Resets the checksum to its initial value. */
   def reset(): Unit
 
