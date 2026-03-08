@@ -101,6 +101,16 @@ class GZIPHeader extends Cloneable {
   def getOS: Int = os
 
   /**
+   * Detects the current operating system and sets the OS field automatically.
+   *
+   * Delegates to [[GZIPHeader$.detectOS]] for detection.
+   *
+   * @see
+   *   [[GZIPHeader$.detectOS]]
+   */
+  def setOSAuto(): Unit = this.os = GZIPHeader.detectOS()
+
+  /**
    * Sets the original file name, encoded as ISO-8859-1.
    *
    * @param name
@@ -219,4 +229,29 @@ object GZIPHeader {
   final val OS_QDOS: Byte    = 0x0c.toByte
   final val OS_RISCOS: Byte  = 0x0d.toByte
   final val OS_UNKNOWN: Byte = 0xff.toByte
+
+  /**
+   * Detects the current operating system and returns the corresponding GZIP OS constant.
+   *
+   * Uses `System.getProperty("os.name")` for detection:
+   *   - Windows → [[OS_MSDOS]] (0)
+   *   - Linux, FreeBSD, SunOS → [[OS_UNIX]] (3)
+   *   - Mac OS X, Darwin → [[OS_MACOS]] (7)
+   *   - Other / null → [[OS_UNKNOWN]] (255)
+   *
+   * @return
+   *   the OS identifier byte as an `Int`
+   */
+  def detectOS(): Int = {
+    val osName = System.getProperty("os.name")
+    if (osName == null) return OS_UNKNOWN & 0xff
+    val lower  = osName.toLowerCase
+    if (lower.startsWith("windows")) OS_MSDOS & 0xff
+    else if (
+      lower.contains("linux") || lower.contains("nix") || lower.contains("nux") ||
+      lower.contains("freebsd") || lower.contains("sunos")
+    ) OS_UNIX & 0xff
+    else if (lower.contains("mac") || lower.contains("darwin")) OS_MACOS & 0xff
+    else OS_UNKNOWN & 0xff
+  }
 }
