@@ -35,7 +35,30 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jzlib
 
 /**
- * GZIPHeader - see http://www.ietf.org/rfc/rfc1952.txt Note: String encoding uses "ISO-8859-1" as per the RFC.
+ * Represents GZIP header metadata as defined in RFC 1952.
+ *
+ * Stores optional fields that can appear in a GZIP header: original file name, comment, modification time, operating
+ * system identifier, extra data, and header CRC.
+ *
+ * String fields (name, comment) are encoded using ISO-8859-1 as required by the GZIP specification.
+ *
+ * ==Usage with Deflater==
+ * {{{
+ * val header = new GZIPHeader()
+ * header.setName("data.txt")
+ * header.setComment("compressed data")
+ * header.setOS(GZIPHeader.OS_UNIX)
+ * header.setModifiedTime(System.currentTimeMillis() / 1000)
+ * }}}
+ *
+ * ==OS constants==
+ * Use the companion object's `OS_*` constants (e.g., [[GZIPHeader.OS_UNIX]], [[GZIPHeader.OS_WIN32]]) for the `setOS`
+ * method.
+ *
+ * @see
+ *   [[GZIPHeader$]] for OS constants
+ * @see
+ *   [[Deflater]] for compression with GZIP wrapping
  */
 class GZIPHeader extends Cloneable {
   import GZIPHeader._
@@ -52,34 +75,74 @@ class GZIPHeader extends Cloneable {
   var done: Boolean        = false
   var mtime: Long          = 0L
 
+  /** Sets the file modification time (Unix timestamp in seconds). */
   def setModifiedTime(mtime: Long): Unit = this.mtime = mtime
-  def getModifiedTime: Long              = mtime
 
+  /** Returns the file modification time (Unix timestamp in seconds). */
+  def getModifiedTime: Long = mtime
+
+  /**
+   * Sets the operating system on which the file was compressed.
+   *
+   * Valid values are 0–13 or 255 ([[GZIPHeader.OS_UNKNOWN]]). Use the `OS_*` constants from the [[GZIPHeader$]]
+   * companion object.
+   *
+   * @param os
+   *   the OS identifier
+   * @throws IllegalArgumentException
+   *   if `os` is not a valid value
+   */
   def setOS(os: Int): Unit = {
     if ((0 <= os && os <= 13) || os == 255) this.os = os
     else throw new IllegalArgumentException("os: " + os)
   }
-  def getOS: Int           = os
 
+  /** Returns the OS identifier. */
+  def getOS: Int = os
+
+  /**
+   * Sets the original file name, encoded as ISO-8859-1.
+   *
+   * @param name
+   *   the original file name
+   */
   def setName(name: String): Unit = {
     // ISO-8859-1 is always available on JVM; Scala.js/Native also support it.
     this.name = name.getBytes("ISO-8859-1")
   }
-  def getName: String             = {
+
+  /** Returns the original file name, or an empty string if not set. */
+  def getName: String = {
     if (this.name == null) return ""
     new String(this.name, "ISO-8859-1")
   }
 
+  /**
+   * Sets a human-readable comment, encoded as ISO-8859-1.
+   *
+   * @param comment
+   *   the comment text
+   */
   def setComment(comment: String): Unit = {
     this.comment = comment.getBytes("ISO-8859-1")
   }
-  def getComment: String                = {
+
+  /** Returns the comment, or an empty string if not set. */
+  def getComment: String = {
     if (this.comment == null) return ""
     new String(this.comment, "ISO-8859-1")
   }
 
+  /**
+   * Sets the CRC-32 of the uncompressed data (stored in the GZIP trailer).
+   *
+   * @param crc
+   *   the CRC-32 value
+   */
   def setCRC(crc: Long): Unit = this.crc = crc
-  def getCRC: Long            = crc
+
+  /** Returns the CRC-32 value. */
+  def getCRC: Long = crc
 
   private[jzlib] def put(d: Deflate): Unit = {
     var flag = 0
@@ -139,6 +202,7 @@ class GZIPHeader extends Cloneable {
   }
 }
 
+/** OS identifier constants for [[GZIPHeader]] as defined in RFC 1952. */
 object GZIPHeader {
   final val OS_MSDOS: Byte   = 0x00.toByte
   final val OS_AMIGA: Byte   = 0x01.toByte

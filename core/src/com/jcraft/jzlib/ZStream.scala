@@ -36,6 +36,29 @@ package com.jcraft.jzlib
 
 import JZlib._
 
+/**
+ * Low-level stream state for compression and decompression.
+ *
+ * '''This class is deprecated.''' Use [[Deflater]] for compression and [[Inflater]] for decompression instead.
+ * `ZStream` remains as the base class for both `Deflater` and `Inflater`, but its public methods (`deflateInit`,
+ * `inflateInit`, etc.) should not be called directly in new code.
+ *
+ * ==Key fields==
+ *
+ *   - `next_in` / `next_in_index` / `avail_in` — input buffer, position, and remaining bytes
+ *   - `next_out` / `next_out_index` / `avail_out` — output buffer, position, and remaining capacity
+ *   - `total_in` / `total_out` — cumulative byte counts
+ *   - `msg` — last error message (or `null`)
+ *
+ * ==Convenience methods==
+ *
+ * Use [[setInput]] and [[setOutput]] to configure buffers without manipulating the fields directly.
+ *
+ * @see
+ *   [[Deflater]] the recommended compression API
+ * @see
+ *   [[Inflater]] the recommended decompression API
+ */
 /** @deprecated Not for public use in the future. */
 @deprecated("Use Deflater or Inflater instead", "1.1.5")
 class ZStream {
@@ -44,16 +67,27 @@ class ZStream {
   private final val DEF_WBITS     = MAX_WBITS
   private final val MAX_MEM_LEVEL = 9
 
+  /** Next input byte array. Set via [[setInput]]. */
   var next_in: Array[Byte] = null // next input byte
+  /** Current read position within `next_in`. */
   var next_in_index: Int   = 0
-  var avail_in: Int        = 0    // number of bytes available at next_in
-  var total_in: Long       = 0L   // total nb of input bytes read so far
 
+  /** Number of bytes available at `next_in` starting from `next_in_index`. */
+  var avail_in: Int  = 0  // number of bytes available at next_in
+  /** Total number of input bytes read so far. */
+  var total_in: Long = 0L // total nb of input bytes read so far
+
+  /** Next output byte array. Set via [[setOutput]]. */
   var next_out: Array[Byte] = null // next output byte should be put there
+  /** Current write position within `next_out`. */
   var next_out_index: Int   = 0
-  var avail_out: Int        = 0    // remaining free space at next_out
-  var total_out: Long       = 0L   // total nb of bytes output so far
 
+  /** Remaining free space in `next_out` starting from `next_out_index`. */
+  var avail_out: Int  = 0  // remaining free space at next_out
+  /** Total number of bytes written to output so far. */
+  var total_out: Long = 0L // total nb of bytes output so far
+
+  /** Last error message, or `null` if no error. */
   var msg: String = null
 
   var dstate: Deflate = null
@@ -204,17 +238,63 @@ class ZStream {
     msg = null
   }
 
+  /**
+   * Sets the output buffer.
+   *
+   * @param buf
+   *   the byte array to write compressed/decompressed data into
+   */
   def setOutput(buf: Array[Byte]): Unit = setOutput(buf, 0, buf.length)
 
+  /**
+   * Sets the output buffer with offset and length.
+   *
+   * @param buf
+   *   the byte array to write into
+   * @param off
+   *   starting offset in `buf`
+   * @param len
+   *   maximum number of bytes to write
+   */
   def setOutput(buf: Array[Byte], off: Int, len: Int): Unit = {
     next_out = buf
     next_out_index = off
     avail_out = len
   }
 
-  def setInput(buf: Array[Byte]): Unit                  = setInput(buf, 0, buf.length, false)
+  /**
+   * Sets the input buffer (replaces any previous input).
+   *
+   * @param buf
+   *   the byte array containing data to compress/decompress
+   */
+  def setInput(buf: Array[Byte]): Unit = setInput(buf, 0, buf.length, false)
+
+  /**
+   * Sets the input buffer, optionally appending to unconsumed input.
+   *
+   * @param buf
+   *   the byte array containing new input data
+   * @param append
+   *   if `true`, appends to any unconsumed input rather than replacing it
+   */
   def setInput(buf: Array[Byte], append: Boolean): Unit = setInput(buf, 0, buf.length, append)
 
+  /**
+   * Sets the input buffer with offset, length, and append control.
+   *
+   * When `append` is `true` and there is unconsumed input, the new data is concatenated to the remaining bytes.
+   * Otherwise the buffer is replaced.
+   *
+   * @param buf
+   *   the byte array containing input data
+   * @param off
+   *   starting offset in `buf`
+   * @param len
+   *   number of bytes to use from `buf`
+   * @param append
+   *   if `true`, appends to unconsumed input
+   */
   def setInput(buf: Array[Byte], off: Int, len: Int, append: Boolean): Unit = {
     if (len <= 0 && append && next_in != null) return
 

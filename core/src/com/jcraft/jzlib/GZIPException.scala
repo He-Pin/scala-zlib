@@ -34,7 +34,20 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jzlib
 
-/** Cross-platform exception (extends Exception, not IOException, for JS/Native compat). */
+/**
+ * Thrown when a GZIP format error is encountered during compression or decompression.
+ *
+ * Unlike the original Java jzlib where `GZIPException` extends `java.io.IOException`, this cross-platform version
+ * extends `Exception` directly so it can be used on JVM, Scala.js, and Scala Native without depending on `java.io`.
+ *
+ * JVM stream wrappers in the `jvm` module catch this exception and rethrow it as `java.io.IOException` at the `java.io`
+ * boundary.
+ *
+ * @param msg
+ *   the detail message (may be `null`)
+ * @see
+ *   [[ZStreamException]] for general zlib stream errors
+ */
 class GZIPException(msg: String) extends Exception(msg) {
   def this() = this(null)
 }
