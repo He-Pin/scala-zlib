@@ -133,6 +133,12 @@ object JZlib {
   /** Huffman-only strategy — no string matching. */
   final val Z_HUFFMAN_ONLY = 2
 
+  /** RLE strategy — fast for data with many repeated bytes. */
+  final val Z_RLE = 3
+
+  /** Fixed Huffman tables — fastest encoding, no dynamic tree overhead. */
+  final val Z_FIXED = 4
+
   /** Default strategy — suitable for most data. */
   final val Z_DEFAULT_STRATEGY = 0
 
