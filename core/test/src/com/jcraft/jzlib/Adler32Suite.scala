@@ -142,6 +142,38 @@ class Adler32Suite extends munit.FunSuite {
     assertEquals(adler.getValue, expected)
   }
 
+  test("combine with zero-length second buffer") {
+    val buf1 = randomBytes(1024)
+
+    val a1       = {
+      val a = new Adler32; a.update(buf1, 0, buf1.length); a.getValue
+    }
+    val a2       = {
+      val a = new Adler32; a.getValue // initial value, no data
+    }
+    val expected = {
+      val a = new Adler32
+      a.update(buf1, 0, buf1.length)
+      a.getValue
+    }
+
+    assertEquals(Adler32.combine(a1, a2, 0L), expected)
+  }
+
+  test("update with offset and partial length") {
+    val data   = "hello, world!".getBytes
+    val offset = 7
+    val len    = 5 // "world"
+
+    val juza     = new JuzAdler32
+    juza.update(data, offset, len)
+    val expected = juza.getValue
+
+    val adler = new Adler32
+    adler.update(data, offset, len)
+    assertEquals(adler.getValue, expected)
+  }
+
   private def randomBytes(n: Int): Array[Byte] = {
     val rng = new scala.util.Random(42)
     Array.fill[Byte](n)(rng.nextInt(256).toByte)

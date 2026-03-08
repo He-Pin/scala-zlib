@@ -476,4 +476,199 @@ class DeflateInflateSuite extends munit.FunSuite {
 
     assertEquals("hel" + new String(actual), new String(hello))
   }
+
+  test("deflate and inflate with Z_FULL_FLUSH") {
+    val data    = "hello, hello! this is a full flush test.".getBytes
+    val compr   = new Array[Byte](comprLen)
+    val uncompr = new Array[Byte](uncomprLen)
+
+    val deflater = new Deflater
+    var err      = deflater.init(Z_DEFAULT_COMPRESSION)
+    assertEquals(err, Z_OK)
+
+    deflater.setInput(data)
+    deflater.setOutput(compr)
+
+    // Feed first half with Z_FULL_FLUSH
+    deflater.avail_in = data.length / 2
+    err = deflater.deflate(Z_FULL_FLUSH)
+    assertEquals(err, Z_OK)
+
+    // Feed second half and finish
+    deflater.avail_in = data.length - data.length / 2
+    err = deflater.deflate(Z_FINISH)
+    assertEquals(err, Z_STREAM_END)
+
+    err = deflater.end()
+    assertEquals(err, Z_OK)
+
+    val inflater = new Inflater
+    err = inflater.init()
+    assertEquals(err, Z_OK)
+
+    inflater.setInput(compr)
+    inflater.setOutput(uncompr)
+
+    var loop = true
+    while (loop) {
+      err = inflater.inflate(Z_NO_FLUSH)
+      if (err == Z_STREAM_END) loop = false
+      else assertEquals(err, Z_OK)
+    }
+
+    err = inflater.end()
+    assertEquals(err, Z_OK)
+
+    val totalOut = inflater.total_out.toInt
+    val actual   = new Array[Byte](totalOut)
+    System.arraycopy(uncompr, 0, actual, 0, totalOut)
+    assertEquals(actual.toSeq, data.toSeq)
+  }
+
+  test("deflate and inflate with Z_SYNC_FLUSH") {
+    val data    = "hello, hello! this is a sync flush test.".getBytes
+    val compr   = new Array[Byte](comprLen)
+    val uncompr = new Array[Byte](uncomprLen)
+
+    val deflater = new Deflater
+    var err      = deflater.init(Z_DEFAULT_COMPRESSION)
+    assertEquals(err, Z_OK)
+
+    deflater.setInput(data)
+    deflater.setOutput(compr)
+
+    // Feed first half with Z_SYNC_FLUSH
+    deflater.avail_in = data.length / 2
+    err = deflater.deflate(Z_SYNC_FLUSH)
+    assertEquals(err, Z_OK)
+
+    // Feed second half and finish
+    deflater.avail_in = data.length - data.length / 2
+    err = deflater.deflate(Z_FINISH)
+    assertEquals(err, Z_STREAM_END)
+
+    err = deflater.end()
+    assertEquals(err, Z_OK)
+
+    val inflater = new Inflater
+    err = inflater.init()
+    assertEquals(err, Z_OK)
+
+    inflater.setInput(compr)
+    inflater.setOutput(uncompr)
+
+    var loop = true
+    while (loop) {
+      err = inflater.inflate(Z_NO_FLUSH)
+      if (err == Z_STREAM_END) loop = false
+      else assertEquals(err, Z_OK)
+    }
+
+    err = inflater.end()
+    assertEquals(err, Z_OK)
+
+    val totalOut = inflater.total_out.toInt
+    val actual   = new Array[Byte](totalOut)
+    System.arraycopy(uncompr, 0, actual, 0, totalOut)
+    assertEquals(actual.toSeq, data.toSeq)
+  }
+
+  test("deflate with different strategies") {
+    val data = Array.fill(20)("The quick brown fox jumps over the lazy dog. ".getBytes).flatten
+
+    val strategies = List(
+      ("Z_FILTERED", Z_FILTERED),
+      ("Z_HUFFMAN_ONLY", Z_HUFFMAN_ONLY),
+      ("Z_RLE", Z_RLE),
+      ("Z_FIXED", Z_FIXED),
+    )
+
+    strategies.foreach { case (name, strategy) =>
+      val compr   = new Array[Byte](comprLen)
+      val uncompr = new Array[Byte](uncomprLen)
+
+      val deflater = new Deflater
+      var err      = deflater.init(Z_DEFAULT_COMPRESSION)
+      assertEquals(err, Z_OK, s"init failed for strategy $name")
+
+      deflater.params(Z_DEFAULT_COMPRESSION, strategy)
+
+      deflater.setInput(data)
+      deflater.setOutput(compr)
+
+      err = deflater.deflate(Z_FINISH)
+      assertEquals(err, Z_STREAM_END, s"deflate failed for strategy $name")
+
+      err = deflater.end()
+      assertEquals(err, Z_OK)
+
+      val inflater = new Inflater
+      err = inflater.init()
+      assertEquals(err, Z_OK)
+
+      inflater.setInput(compr)
+      inflater.setOutput(uncompr)
+
+      var loop = true
+      while (loop) {
+        err = inflater.inflate(Z_NO_FLUSH)
+        if (err == Z_STREAM_END) loop = false
+        else assertEquals(err, Z_OK)
+      }
+
+      err = inflater.end()
+      assertEquals(err, Z_OK)
+
+      val totalOut = inflater.total_out.toInt
+      val actual   = new Array[Byte](totalOut)
+      System.arraycopy(uncompr, 0, actual, 0, totalOut)
+      assertEquals(actual.toSeq, data.toSeq, s"data mismatch for strategy $name")
+    }
+  }
+
+  test("inflate detects corrupted data") {
+    val data  = "hello, hello! some data to compress for corruption test.".getBytes
+    val compr = new Array[Byte](comprLen)
+
+    val deflater = new Deflater
+    var err      = deflater.init(Z_DEFAULT_COMPRESSION)
+    assertEquals(err, Z_OK)
+
+    deflater.setInput(data)
+    deflater.setOutput(compr)
+
+    err = deflater.deflate(Z_FINISH)
+    assertEquals(err, Z_STREAM_END)
+
+    val compressedLen = deflater.total_out.toInt
+    err = deflater.end()
+    assertEquals(err, Z_OK)
+
+    // Corrupt a byte in the middle of the compressed data
+    val corruptIdx = compressedLen / 2
+    compr(corruptIdx) = (compr(corruptIdx) ^ 0xff).toByte
+
+    val uncompr  = new Array[Byte](uncomprLen)
+    val inflater = new Inflater
+    err = inflater.init()
+    assertEquals(err, Z_OK)
+
+    inflater.setInput(compr)
+    inflater.setOutput(uncompr)
+
+    var gotError = false
+    var loop     = true
+    while (loop) {
+      err = inflater.inflate(Z_NO_FLUSH)
+      if (err == Z_DATA_ERROR) {
+        gotError = true
+        loop = false
+      } else if (err == Z_STREAM_END) {
+        loop = false
+      }
+    }
+
+    inflater.end()
+    assert(gotError, "Expected Z_DATA_ERROR from corrupted compressed data")
+  }
 }

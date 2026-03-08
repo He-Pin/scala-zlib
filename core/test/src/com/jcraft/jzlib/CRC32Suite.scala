@@ -132,6 +132,38 @@ class CRC32Suite extends munit.FunSuite {
     assertEquals(crc.getValue, expected)
   }
 
+  test("combine with zero-length second buffer") {
+    val buf1 = randomBytes(1024)
+
+    val c1       = {
+      val c = new CRC32; c.update(buf1, 0, buf1.length); c.getValue
+    }
+    val c2       = {
+      val c = new CRC32; c.getValue // initial value, no data
+    }
+    val expected = {
+      val c = new CRC32
+      c.update(buf1, 0, buf1.length)
+      c.getValue
+    }
+
+    assertEquals(CRC32.combine(c1, c2, 0L), expected)
+  }
+
+  test("update with offset and partial length") {
+    val data   = "hello, world!".getBytes
+    val offset = 7
+    val len    = 5 // "world"
+
+    val juzc     = new JuzCRC32
+    juzc.update(data, offset, len)
+    val expected = juzc.getValue
+
+    val crc = new CRC32
+    crc.update(data, offset, len)
+    assertEquals(crc.getValue, expected)
+  }
+
   test("getCRC32Table returns copy of internal table") {
     val t1 = CRC32.getCRC32Table
     val t2 = CRC32.getCRC32Table

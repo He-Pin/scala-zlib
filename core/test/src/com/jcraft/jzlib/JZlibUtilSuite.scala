@@ -52,4 +52,17 @@ class JZlibUtilSuite extends munit.FunSuite {
       uncompress(Array[Byte](1, 2, 3, 4, 5))
     }
   }
+
+  test("compress empty array") {
+    val original   = new Array[Byte](0)
+    val compressed = compress(original)
+    assert(compressed.length > 0, "Compressed empty array should produce non-empty output (header/trailer)")
+  }
+
+  test("uncompress empty compressed data") {
+    val original     = new Array[Byte](0)
+    val compressed   = compress(original)
+    val decompressed = uncompress(compressed)
+    assertEquals(decompressed.length, 0)
+  }
 }
