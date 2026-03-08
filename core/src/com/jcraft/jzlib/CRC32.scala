@@ -51,6 +51,7 @@ final class CRC32 extends Checksum {
 
   private var v: Int = 0
 
+  /** Updates the checksum with the specified bytes from `buf`. */
   def update(buf: Array[Byte], index: Int, len: Int): Unit = {
     var c   = ~v
     var i   = index
@@ -81,12 +82,16 @@ final class CRC32 extends Checksum {
     v = ~c
   }
 
+  /** Resets the CRC-32 checksum to 0. */
   def reset(): Unit = v = 0
 
+  /** Resets the CRC-32 checksum to a specific value. */
   def reset(vv: Long): Unit = v = (vv & 0xffffffffL).toInt
 
+  /** Returns the current CRC-32 checksum value. */
   def getValue: Long = v & 0xffffffffL
 
+  /** Creates an independent copy of this checksum. */
   def copy(): CRC32 = {
     val foo = new CRC32
     foo.v = v

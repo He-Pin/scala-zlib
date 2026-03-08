@@ -54,18 +54,22 @@ final class Adler32 extends Checksum {
   private var s1: Long = 1L
   private var s2: Long = 0L
 
+  /** Resets the checksum to a specific initial value. */
   def reset(init: Long): Unit = {
     s1 = init & 0xffffL
     s2 = (init >> 16) & 0xffffL
   }
 
+  /** Resets the checksum to the initial Adler-32 value (1L). */
   def reset(): Unit = {
     s1 = 1L
     s2 = 0L
   }
 
+  /** Returns the current Adler-32 checksum value. */
   def getValue: Long = (s2 << 16) | s1
 
+  /** Updates the checksum with the specified bytes from `buf`. */
   def update(buf: Array[Byte], index: Int, len: Int): Unit = {
     var i   = index
     var rem = len
@@ -100,6 +104,7 @@ final class Adler32 extends Checksum {
     s2 %= BASE
   }
 
+  /** Creates an independent copy of this checksum. */
   def copy(): Adler32 = {
     val foo = new Adler32
     foo.s1 = s1
