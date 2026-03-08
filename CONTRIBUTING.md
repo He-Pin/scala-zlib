@@ -2,38 +2,51 @@
 
 Thank you for your interest in contributing to scala-zlib! This guide covers everything you need to get started, from setting up your development environment to submitting a pull request.
 
-## Prerequisites
+## Development Environment
 
-- **Java 17+** (check with `java -version`)
-- **Mill 0.11.12** (see [Getting Started](#getting-started))
-- **Git**
-- Basic familiarity with Scala and zlib concepts
+### Prerequisites
 
-## Getting Started
+| Tool | Version | Purpose |
+|------|---------|---------|
+| **Java** | 17+ (21 recommended) | Build and run JVM tests |
+| **Mill** | 0.12.11 (pinned in `.mill-version`) | Build tool |
+| **Node.js** | 20+ | Run Scala.js and WASM tests |
+| **Clang / LLVM** | System default | Compile Scala Native tests |
+| **Git** | Any recent version | Version control |
 
 ### 1. Fork and clone
 
 ```bash
-git clone https://github.com/<your-username>/scala-zlib.git
+git clone --recurse-submodules https://github.com/<your-username>/scala-zlib.git
 cd scala-zlib
 ```
 
+The `--recurse-submodules` flag pulls the upstream jzlib source into `references/jzlib`.
+
 ### 2. Install Mill
 
+The repository includes a `./mill` launcher script and a `.mill-version` file (0.12.11). On first run, it downloads the correct Mill version automatically:
+
 ```bash
-curl -L https://github.com/com-lihaoyi/mill/releases/download/0.11.12/0.11.12 > mill
-chmod +x mill
+./mill version   # Should print 0.12.11
 ```
 
-Alternatively, use [coursier](https://get-coursier.io/) or your OS package manager.
+Alternatively, install Mill via [coursier](https://get-coursier.io/), Homebrew, or your OS package manager.
 
 ### 3. Verify setup
 
 ```bash
-./mill core[2.13.16].compile
+./mill core[2.13.16].compile   # Should complete without errors
+./mill core[2.13.16].test      # Should pass all tests
 ```
 
-You should see a successful compilation. If Mill downloads dependencies for a while on the first run, that is normal.
+If Mill downloads dependencies on the first run, that is normal.
+
+### Platform-specific setup
+
+- **Scala.js tests**: Require Node.js. Install via `nvm`, Homebrew, or your OS package manager.
+- **Scala Native tests**: Require Clang/LLVM. On Ubuntu: `sudo apt-get install clang libstdc++-12-dev zlib1g-dev`. On macOS, Xcode command-line tools provide Clang.
+- **WASM tests**: Require Node.js (same as Scala.js). WASM support is experimental via the Scala.js WASM backend.
 
 ## Project Structure
 
@@ -41,44 +54,99 @@ You should see a successful compilation. If Mill downloads dependencies for a wh
 scala-zlib/
 ├── build.sc                    # Mill build definition (modules, deps, cross-versions)
 ├── .scalafmt.conf              # Scalafmt code-formatting configuration
-├── .mill-version               # Pins the Mill version used
+├── .mill-version               # Pins Mill version (0.12.11)
 ├── README.md                   # Project README
 ├── CONTRIBUTING.md             # This file
 ├── CLAUDE.md                   # AI-assistant guide
 ├── LICENSE.txt                 # BSD-style license
 ├── ChangeLog                   # Original jzlib changelog
+├── references/jzlib/           # Upstream jzlib (git submodule)
 ├── core/                       # Cross-platform algorithm module (JVM + JS + Native + WASM)
-│   └── src/
-│       └── com/jcraft/jzlib/
-│           ├── JZlib.scala     # Constants and WrapperType enum
-│           ├── ZStream.scala   # Low-level stream state (deprecated)
-│           ├── Deflater.scala  # High-level compression
-│           ├── Inflater.scala  # High-level decompression
-│           ├── Deflate.scala   # Internal deflate algorithm
-│           ├── Inflate.scala   # Internal inflate algorithm
-│           ├── InfBlocks.scala # Inflate block decoder
-│           ├── InfCodes.scala  # Inflate code decoder
-│           ├── InfTree.scala   # Inflate Huffman tree builder
-│           ├── Tree.scala      # Huffman tree
-│           ├── StaticTree.scala# Static Huffman trees
-│           ├── Adler32.scala   # Adler-32 checksum
-│           ├── CRC32.scala     # CRC-32 checksum
-│           ├── GZIPHeader.scala# GZIP header data
-│           ├── GZIPException.scala     # Exception (extends Exception, NOT IOException)
-│           └── ZStreamException.scala  # Exception (extends Exception, NOT IOException)
+│   ├── src/
+│   │   └── com/jcraft/jzlib/
+│   │       ├── JZlib.scala     # Constants and WrapperType enum
+│   │       ├── ZStream.scala   # Low-level stream state (deprecated)
+│   │       ├── Deflater.scala  # High-level compression
+│   │       ├── Inflater.scala  # High-level decompression
+│   │       ├── Deflate.scala   # Internal deflate algorithm
+│   │       ├── Inflate.scala   # Internal inflate algorithm
+│   │       ├── InfBlocks.scala # Inflate block decoder
+│   │       ├── InfCodes.scala  # Inflate code decoder
+│   │       ├── InfTree.scala   # Inflate Huffman tree builder
+│   │       ├── Tree.scala      # Huffman tree
+│   │       ├── StaticTree.scala# Static Huffman trees
+│   │       ├── Adler32.scala   # Adler-32 checksum
+│   │       ├── CRC32.scala     # CRC-32 checksum
+│   │       ├── GZIPHeader.scala# GZIP header data
+│   │       ├── GZIPException.scala     # Exception (extends Exception, NOT IOException)
+│   │       └── ZStreamException.scala  # Exception (extends Exception, NOT IOException)
+│   └── test/src/               # Cross-platform tests (munit)
 ├── jvm/                        # JVM-only stream wrappers
-│   └── src/
-│       └── com/jcraft/jzlib/
-│           ├── DeflaterOutputStream.scala
-│           ├── InflaterInputStream.scala
-│           ├── GZIPOutputStream.scala
-│           ├── GZIPInputStream.scala
-│           ├── ZOutputStream.scala     # Deprecated legacy stream
-│           └── ZInputStream.scala      # Deprecated legacy stream
+│   ├── src/
+│   │   └── com/jcraft/jzlib/
+│   │       ├── DeflaterOutputStream.scala
+│   │       ├── InflaterInputStream.scala
+│   │       ├── GZIPOutputStream.scala
+│   │       ├── GZIPInputStream.scala
+│   │       ├── ZOutputStream.scala     # Deprecated legacy stream
+│   │       └── ZInputStream.scala      # Deprecated legacy stream
+│   └── test/src/               # JVM-only tests (munit)
 └── .github/
     └── workflows/
         └── ci.yml              # GitHub Actions CI configuration
 ```
+
+### Module architecture
+
+- **`core`** — Pure algorithm (`Deflater`, `Inflater`, `Adler32`, `CRC32`, `GZIPHeader`). NO `java.io` dependencies. Compiles to JVM, Scala.js, Scala Native, and WASM.
+- **`jvm`** — `java.io` stream wrappers (`DeflaterOutputStream`, `InflaterInputStream`, etc.). JVM only. Depends on `core`.
+
+## Building and Testing
+
+### Compile
+
+```bash
+./mill core[2.13.16].compile         # JVM, Scala 2.13
+./mill core[3.3.7].compile           # JVM, Scala 3
+./mill jvm[2.13.16].compile          # JVM stream wrappers
+./mill coreJS[2.13.16].compile       # Scala.js
+./mill coreNative[2.13.16].compile   # Scala Native
+./mill coreWASM[2.13.16].compile     # WASM (experimental)
+./mill __.compile                    # All modules, all Scala versions
+```
+
+### Test
+
+```bash
+# ── By platform ──────────────────────────────────────────────────────────────
+./mill core[2.13.16].test            # JVM core
+./mill jvm[2.13.16].test             # JVM stream wrappers
+./mill coreJS[2.13.16].test          # Scala.js (requires Node.js)
+./mill coreNative[2.13.16].test      # Scala Native (requires Clang/LLVM)
+./mill coreWASM[2.13.16].test        # WASM (requires Node.js)
+
+# ── All platforms, all Scala versions ────────────────────────────────────────
+./mill __.test
+
+# ── Specific test suite ─────────────────────────────────────────────────────
+./mill core[2.13.16].test.testOnly com.jcraft.jzlib.Adler32Suite
+./mill core[3.3.7].test.testOnly com.jcraft.jzlib.Adler32Suite
+
+# ── Specific test by name ───────────────────────────────────────────────────
+./mill core[2.13.16].test.testOnly -- com.jcraft.jzlib.Adler32Suite '*combine*'
+```
+
+### Format
+
+```bash
+# Format all sources
+./mill mill.scalalib.scalafmt.ScalafmtModule/reformatAll __.sources
+
+# Check formatting without modifying files (what CI runs)
+./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+```
+
+CI will fail if the format check fails. **Always run scalafmt before pushing.**
 
 ## Development Workflow
 
@@ -95,15 +163,7 @@ Keep changes focused. One logical change per commit.
 ### 3. Run the tests
 
 ```bash
-# Test a single module
-./mill core[2.13.16].test
-./mill jvm[2.13.16].test
-
-# Test all modules and Scala versions
 ./mill __.test
-
-# Run a specific test suite
-./mill core[2.13.16].test.testOnly com.jcraft.jzlib.Adler32Suite
 ```
 
 ### 4. Format your code
@@ -118,9 +178,7 @@ Keep changes focused. One logical change per commit.
 ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
 ```
 
-CI will fail if this check fails. Always run it before pushing.
-
-### 6. Write a commit message (see format below)
+### 6. Write a commit message (see [Commit Message Format](#commit-message-format))
 
 ### 7. Push and open a pull request
 
@@ -176,14 +234,17 @@ References:
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 ```
 
-## Migrating Upstream jzlib Commits
+## Tracking Upstream jzlib Commits
 
-scala-zlib tracks jzlib one commit at a time. When porting an upstream commit:
+scala-zlib tracks [jzlib](https://github.com/jruby/jzlib) one commit at a time. The upstream source is available as a git submodule at `references/jzlib` for easy diffing.
+
+When porting an upstream commit:
 
 1. **Find the upstream commit**
    ```
    https://github.com/jruby/jzlib/commit/<SHA>
    ```
+   Or browse the submodule: `references/jzlib/`
 
 2. **Identify which files changed** and locate the corresponding Scala sources in `core/` or `jvm/`.
 
@@ -200,12 +261,12 @@ scala-zlib tracks jzlib one commit at a time. When porting an upstream commit:
    ./mill mill.scalalib.scalafmt.ScalafmtModule/reformatAll __.sources
    ```
 
-6. **Run tests**
+6. **Run tests on all platforms**
    ```bash
    ./mill __.test
    ```
 
-7. **Commit with the upstream SHA** in the References section.
+7. **Commit with the upstream SHA** in the `References:` section.
 
 ## Code Style
 
@@ -214,7 +275,14 @@ scala-zlib tracks jzlib one commit at a time. When porting an upstream commit:
 - Follow the `.scalafmt.conf` configuration — always run scalafmt before committing.
 - Keep the public API close to jzlib for compatibility with existing code that uses jzlib.
 - Use `Array[Byte]` and `Array[Int]` (not `List`, `Vector`, `Seq`) for performance-critical data paths.
-- Keep the imperative, mutable style in algorithm files (`Deflate`, `Inflate`, `InfBlocks`, `InfCodes`, `InfTree`, `Tree`). These are direct ports of C/Java low-level algorithms; readability comes from faithfulness to the original, not from functional idioms.
+
+### Algorithm code — keep it imperative
+
+The algorithm files (`Deflate`, `Inflate`, `InfBlocks`, `InfCodes`, `InfTree`, `Tree`, `StaticTree`) are **intentionally imperative with mutable state**. Do **not** refactor them to functional style. This is preserved from the original for:
+
+1. **Performance** — no allocation overhead in the hot path
+2. **Faithfulness** — easy diff against upstream jzlib Java source
+3. **Correctness** — any deviation from the original algorithm risks subtle compression bugs
 
 ### ScalaDoc
 
@@ -237,6 +305,8 @@ The `core` module must compile on JVM, Scala.js, Scala Native, and WASM. This me
 - `java.io.*` — use the `jvm` module for any stream classes
 - `java.net.*`
 - `java.util.zip.*`
+- `java.lang.reflect.*`
+- `sun.*` / `com.sun.*`
 - Any reflection or JVM-specific API
 
 **Safe to use in `core`:**
@@ -256,13 +326,13 @@ class GZIPException(msg: String) extends Exception(msg)
 class ZStreamException(msg: String) extends Exception(msg)
 ```
 
-JVM stream classes in the `jvm` module may catch/rethrow as `java.io.IOException` at the boundary.
+JVM stream classes in the `jvm` module catch these and rethrow as `java.io.IOException` at the `java.io` boundary.
 
 ## Testing
 
 ### Framework
 
-Tests use [munit](https://scalameta.org/munit/), which is cross-platform (JVM + JS + Native):
+Tests use [munit](https://scalameta.org/munit/), which is cross-platform (JVM + JS + Native + WASM):
 
 ```scala
 class Adler32Suite extends munit.FunSuite {
@@ -282,7 +352,7 @@ class Adler32Suite extends munit.FunSuite {
 
 ### Test Naming
 
-Use descriptive names in backtick strings for `test(...)`:
+Use descriptive names for `test(...)`:
 
 ```scala
 test("deflate and inflate with Z_DEFAULT_COMPRESSION") { ... }
@@ -290,18 +360,10 @@ test("combine two Adler-32 checksums") { ... }
 test("GZIPInputStream reads concatenated gzip streams") { ... }
 ```
 
-### Run Specific Tests
+### Test File Locations
 
-```bash
-# Single test suite, Scala 2.13
-./mill core[2.13.16].test.testOnly com.jcraft.jzlib.Adler32Suite
-
-# Single test suite, Scala 3
-./mill core[3.3.7].test.testOnly com.jcraft.jzlib.Adler32Suite
-
-# Run a specific test by name
-./mill core[2.13.16].test.testOnly -- com.jcraft.jzlib.Adler32Suite '*combine*'
-```
+- `core/test/src/` — Cross-platform tests (run on JVM, JS, Native, WASM)
+- `jvm/test/src/` — JVM-only tests (stream wrappers)
 
 ### Coverage Expectations
 
@@ -313,12 +375,15 @@ test("GZIPInputStream reads concatenated gzip streams") { ... }
 
 Before your PR can be merged it must:
 
-1. ✅ Compile on Scala 2.13 and Scala 3 (`./mill __.compile`)
+1. ✅ Compile on all platforms and Scala versions (`./mill __.compile`)
 2. ✅ All tests pass (`./mill __.test`)
 3. ✅ Scalafmt clean (`./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources`)
 4. ✅ Include tests for new functionality or bug fixes
 5. ✅ Follow the commit message format above
 6. ✅ Reference the upstream jzlib commit if applicable
+7. ✅ Not introduce `java.io` or other JVM-only imports in the `core` module
+
+CI runs format checks, then tests on JVM (Scala 2.13 + 3), Scala.js (Scala 2.13 + 3), and Scala Native (Scala 2.13 + 3) in parallel.
 
 ## Questions
 

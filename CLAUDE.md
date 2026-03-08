@@ -2,13 +2,15 @@
 
 ## Project Overview
 
-scala-zlib is a pure Scala port of [jzlib](https://github.com/jruby/jzlib), a Java re-implementation of zlib compression (RFC 1950/1951/1952) originally authored by ymnk at JCraft, Inc. It supports **JVM, Scala.js, Scala Native, and WASM** with no native dependencies or JNI.
+scala-zlib is a pure Scala port of [jzlib](https://github.com/jruby/jzlib), a Java re-implementation of zlib compression (RFC 1950/1951/1952) originally authored by ymnk at JCraft, Inc. It supports **JVM, Scala.js 1.20.0, Scala Native 0.5.10, and WASM** (experimental via Scala.js) with no native dependencies or JNI.
 
 - **Package**: `com.jcraft.jzlib`
-- **Scala versions**: 2.13.x and 3.3.x
-- **Build tool**: Mill 0.11.12
+- **Scala versions**: 2.13.16 and 3.3.7
+- **Build tool**: Mill 0.12.11 (pinned in `.mill-version`)
 - **Test framework**: munit (cross-platform)
+- **Java**: 17+ (21 recommended)
 - **License**: BSD-style (same as jzlib)
+- **Upstream**: https://github.com/jruby/jzlib (git submodule at `references/jzlib`)
 
 ## Architecture
 
@@ -53,36 +55,55 @@ Both modules use the same package name. The `core` module provides the algorithm
 | `ZOutputStream` | jvm | Legacy compressing stream — **deprecated** |
 | `ZInputStream` | jvm | Legacy decompressing stream — **deprecated** |
 
-## Build System: Mill 0.11.12
+## Build System: Mill 0.12.11
+
+### Mill Modules
+
+| Module | Platforms | Description |
+|--------|-----------|-------------|
+| `core` | JVM | Cross-platform algorithm (JVM build) |
+| `coreJS` | Scala.js | Cross-platform algorithm (JS build) |
+| `coreNative` | Scala Native | Cross-platform algorithm (Native build) |
+| `coreWASM` | WASM | Cross-platform algorithm (WASM build, experimental) |
+| `jvm` | JVM | JVM-only `java.io` stream wrappers |
 
 ### Common Commands
 
 ```bash
-# Compile
-./mill core[2.13.16].compile
-./mill core[3.3.7].compile
-./mill jvm[2.13.16].compile
-./mill __.compile                  # all modules, all Scala versions
+# ── Compile ──────────────────────────────────────────────────────────────────
+./mill core[2.13.16].compile         # JVM, Scala 2.13
+./mill core[3.3.7].compile           # JVM, Scala 3
+./mill jvm[2.13.16].compile          # JVM stream wrappers
+./mill coreJS[2.13.16].compile       # Scala.js
+./mill coreJS[3.3.7].compile         # Scala.js, Scala 3
+./mill coreNative[2.13.16].compile   # Scala Native
+./mill coreNative[3.3.7].compile     # Scala Native, Scala 3
+./mill coreWASM[2.13.16].compile     # WASM (experimental)
+./mill coreWASM[3.3.7].compile       # WASM, Scala 3
+./mill __.compile                    # All modules, all Scala versions
 
-# Test
-./mill core[2.13.16].test
-./mill core[3.3.7].test
-./mill jvm[2.13.16].test
-./mill __.test                     # all modules, all Scala versions
+# ── Test ─────────────────────────────────────────────────────────────────────
+./mill core[2.13.16].test            # JVM core
+./mill core[3.3.7].test              # JVM core, Scala 3
+./mill jvm[2.13.16].test             # JVM stream wrappers
+./mill jvm[3.3.7].test               # JVM stream wrappers, Scala 3
+./mill coreJS[2.13.16].test          # Scala.js (requires Node.js)
+./mill coreNative[2.13.16].test      # Scala Native (requires Clang/LLVM)
+./mill coreWASM[2.13.16].test        # WASM (requires Node.js)
+./mill __.test                       # All modules, all Scala versions
 
-# Run a specific test suite
+# ── Specific test suite ─────────────────────────────────────────────────────
 ./mill core[2.13.16].test.testOnly com.jcraft.jzlib.Adler32Suite
 
-# Format all sources with scalafmt
+# ── Format ───────────────────────────────────────────────────────────────────
 ./mill mill.scalalib.scalafmt.ScalafmtModule/reformatAll __.sources
-
-# Check formatting (what CI runs — fails if unformatted)
 ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
 ```
 
 ## Upstream Project
 
 - **URL**: https://github.com/jruby/jzlib
+- **Submodule**: `references/jzlib` (for easy diffing against upstream)
 - This project tracks jzlib commits one-by-one.
 - Every commit in this repository records its upstream jzlib commit SHA in the `References:` section of the commit message.
 - To view an upstream commit: `https://github.com/jruby/jzlib/commit/<SHA>`
@@ -170,7 +191,7 @@ class Adler32Suite extends munit.FunSuite {
 }
 ```
 
-Test files live in `core/test/src/` and `jvm/test/src/`. Use descriptive names in backtick strings:
+Test files live in `core/test/src/` and `jvm/test/src/`. Use descriptive names:
 
 ```scala
 test("deflate and inflate with Z_DEFAULT_COMPRESSION") { ... }
@@ -267,6 +288,8 @@ When porting an upstream jzlib commit or adding a feature:
 | JVM input stream | `jvm/src/com/jcraft/jzlib/InflaterInputStream.scala` |
 | JVM GZIP output | `jvm/src/com/jcraft/jzlib/GZIPOutputStream.scala` |
 | JVM GZIP input | `jvm/src/com/jcraft/jzlib/GZIPInputStream.scala` |
+| Upstream jzlib source | `references/jzlib/` (git submodule) |
 | Mill build definition | `build.sc` |
+| Mill version | `.mill-version` (0.12.11) |
 | Scalafmt config | `.scalafmt.conf` |
 | CI workflow | `.github/workflows/ci.yml` |

@@ -1,9 +1,13 @@
 # scala-zlib
 
-[![Scala 2.13](https://img.shields.io/badge/Scala-2.13-red.svg)](https://www.scala-lang.org/)
+[![Scala 2.13](https://img.shields.io/badge/Scala-2.13.16-red.svg)](https://www.scala-lang.org/)
 [![Scala 3](https://img.shields.io/badge/Scala-3.3.7-red.svg)](https://www.scala-lang.org/)
 [![License: BSD](https://img.shields.io/badge/License-BSD-blue.svg)](LICENSE.txt)
 [![CI](https://github.com/scala-zlib/scala-zlib/actions/workflows/ci.yml/badge.svg)](https://github.com/scala-zlib/scala-zlib/actions)
+[![JVM](https://img.shields.io/badge/Platform-JVM-blue.svg)](#platform-support)
+[![Scala.js](https://img.shields.io/badge/Platform-Scala.js_1.20.0-blue.svg)](#platform-support)
+[![Scala Native](https://img.shields.io/badge/Platform-Scala_Native_0.5.10-blue.svg)](#platform-support)
+[![WASM](https://img.shields.io/badge/Platform-WASM_(experimental)-blue.svg)](#platform-support)
 
 **scala-zlib** is a pure Scala port of [jzlib](https://github.com/jruby/jzlib) — a Java re-implementation of zlib (RFC 1950/1951/1952). It provides deflate/inflate compression, GZIP support, streaming I/O wrappers, and checksums (Adler-32 and CRC-32) across all Scala platforms with no native dependencies.
 
@@ -13,18 +17,38 @@
 |------|----------|
 | Compression on Scala.js | ✅ Works — pure Scala algorithm, no JNI |
 | Compression on Scala Native | ✅ Works — no system zlib dependency required |
+| Compression on WASM | ✅ Works — via Scala.js WASM backend (experimental) |
 | `Z_PARTIAL_FLUSH` / `Z_SYNC_FLUSH` | ✅ Full flush-mode support (unlike `java.util.zip`) |
 | GZIP read/write | ✅ Built-in GZIPInputStream / GZIPOutputStream |
 | Adler-32 / CRC-32 combining | ✅ `adler32_combine` / `crc32_combine` |
 | Preset dictionary compression | ✅ Full zlib dictionary support |
 
+## Platform Support
+
+| Feature | JVM | Scala.js | Scala Native | WASM |
+|---------|:---:|:--------:|:------------:|:----:|
+| Deflate / Inflate | ✅ | ✅ | ✅ | ✅ |
+| GZIP format | ✅ | ✅ | ✅ | ✅ |
+| Adler-32 / CRC-32 | ✅ | ✅ | ✅ | ✅ |
+| Preset dictionary | ✅ | ✅ | ✅ | ✅ |
+| DeflaterOutputStream | ✅ | ❌ | ❌ | ❌ |
+| InflaterInputStream | ✅ | ❌ | ❌ | ❌ |
+| GZIPOutputStream | ✅ | ❌ | ❌ | ❌ |
+| GZIPInputStream | ✅ | ❌ | ❌ | ❌ |
+| ZOutputStream (legacy) | ✅ | ❌ | ❌ | ❌ |
+| ZInputStream (legacy) | ✅ | ❌ | ❌ | ❌ |
+
+**Requirements**: Java 17+ · Scala 2.13.16 or 3.3.7 · Scala.js 1.20.0 · Scala Native 0.5.10
+
+Stream classes are in the `jvm` module and extend `java.io` streams. For JS/Native/WASM, use `Deflater` and `Inflater` directly from the `core` module and manage your own byte buffers.
+
 ## Upstream Project
 
-scala-zlib is a direct Scala port of **jzlib**, originally authored by ymnk at JCraft, Inc. and currently maintained by the JRuby team at:
+scala-zlib is a direct Scala port of **jzlib**, originally authored by ymnk at JCraft, Inc. and currently maintained by the JRuby team:
 
 > https://github.com/jruby/jzlib
 
-Each commit in this repository tracks one upstream jzlib commit. The upstream commit SHA is recorded in every commit message.
+The upstream source is tracked as a git submodule at `references/jzlib`. Each commit in this repository tracks one upstream jzlib commit, with the upstream SHA recorded in the `References:` section of the commit message.
 
 ## Features
 
@@ -33,7 +57,20 @@ Each commit in this repository tracks one upstream jzlib commit. The upstream co
 - **Streaming API**: `DeflaterOutputStream`, `InflaterInputStream`, `GZIPOutputStream`, `GZIPInputStream` (JVM only)
 - **Checksums**: Adler-32 and CRC-32, with combine operations
 - **Preset dictionaries**: full support for zlib dictionary-based compression
-- **Cross-platform**: JVM, Scala.js, Scala Native, WASM
+- **Cross-platform**: JVM, Scala.js, Scala Native, WASM — no JNI, no native dependencies
+
+## Module Structure
+
+```
+scala-zlib/
+├── core/    Cross-platform zlib algorithm — JVM, JS, Native, WASM
+│            NO java.io dependencies allowed here.
+└── jvm/     JVM-only stream wrappers (extends java.io.Filter* streams)
+             Depends on core.
+```
+
+- **`core`** — Pure algorithm (`Deflater`, `Inflater`, `Adler32`, `CRC32`, `GZIPHeader`). Compiles on all platforms.
+- **`jvm`** — `java.io` stream wrappers (`DeflaterOutputStream`, `InflaterInputStream`, `GZIPOutputStream`, `GZIPInputStream`). JVM only.
 
 ## Installation
 
@@ -167,23 +204,6 @@ inflater.init()
 // ... when inflate returns Z_NEED_DICT, supply the dictionary by dictId
 ```
 
-## Platform Support
-
-| Feature | JVM | Scala.js | Scala Native | WASM |
-|---------|:---:|:--------:|:------------:|:----:|
-| Deflate / Inflate | ✅ | ✅ | ✅ | ✅ |
-| GZIP format | ✅ | ✅ | ✅ | ✅ |
-| Adler-32 / CRC-32 | ✅ | ✅ | ✅ | ✅ |
-| Preset dictionary | ✅ | ✅ | ✅ | ✅ |
-| DeflaterOutputStream | ✅ | ❌ | ❌ | ❌ |
-| InflaterInputStream | ✅ | ❌ | ❌ | ❌ |
-| GZIPOutputStream | ✅ | ❌ | ❌ | ❌ |
-| GZIPInputStream | ✅ | ❌ | ❌ | ❌ |
-| ZOutputStream (legacy) | ✅ | ❌ | ❌ | ❌ |
-| ZInputStream (legacy) | ✅ | ❌ | ❌ | ❌ |
-
-Stream classes are in the `jvm` module and extend `java.io` streams. For JS/Native/WASM, use `Deflater` and `Inflater` directly from the `core` module and manage your own byte buffers.
-
 ## Cross-Platform Usage
 
 On Scala.js, Scala Native, and WASM, use only the `core` module:
@@ -260,28 +280,34 @@ def decompress(data: Array[Byte], maxLen: Int = 65536): Array[Byte] = {
 
 ### Prerequisites
 
-- Java 17+
-- [Mill](https://mill-build.com/) 0.11.12
+- **Java 17+** (Java 21 recommended; used in CI)
+- [Mill](https://mill-build.com/) 0.12.11 (pinned in `.mill-version`)
 
-### Commands
+### Build Commands
 
 ```bash
-# Compile core for Scala 2.13
-./mill core[2.13.16].compile
+# ── Compile ──────────────────────────────────────────────────────────────────
+./mill core[2.13.16].compile         # JVM, Scala 2.13
+./mill core[3.3.7].compile           # JVM, Scala 3
+./mill jvm[2.13.16].compile          # JVM stream wrappers
+./mill coreJS[2.13.16].compile       # Scala.js
+./mill coreNative[2.13.16].compile   # Scala Native
+./mill coreWASM[2.13.16].compile     # WASM (experimental)
+./mill __.compile                    # All modules, all versions
 
-# Compile core for Scala 3
-./mill core[3.3.7].compile
+# ── Test ─────────────────────────────────────────────────────────────────────
+./mill core[2.13.16].test            # JVM
+./mill jvm[2.13.16].test             # JVM stream wrappers
+./mill coreJS[2.13.16].test          # Scala.js (requires Node.js)
+./mill coreNative[2.13.16].test      # Scala Native (requires Clang/LLVM)
+./mill coreWASM[2.13.16].test        # WASM (requires Node.js)
+./mill __.test                       # All platforms, all versions
 
-# Run tests (Scala 2.13)
-./mill core[2.13.16].test
+# ── Specific test suite ─────────────────────────────────────────────────────
+./mill core[2.13.16].test.testOnly com.jcraft.jzlib.Adler32Suite
 
-# Run all tests across all modules and Scala versions
-./mill __.test
-
-# Format all sources with scalafmt
+# ── Format ───────────────────────────────────────────────────────────────────
 ./mill mill.scalalib.scalafmt.ScalafmtModule/reformatAll __.sources
-
-# Check formatting without modifying files
 ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
 ```
 

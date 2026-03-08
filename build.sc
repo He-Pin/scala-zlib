@@ -1,3 +1,5 @@
+import $ivy.`com.lihaoyi::mill-contrib-jmh:0.12.11`
+
 import mill._
 import mill.scalalib._
 import mill.scalajslib._
@@ -5,6 +7,7 @@ import mill.scalajslib.api._
 import mill.scalanativelib._
 import mill.scalalib.scalafmt.ScalafmtModule
 import mill.scalalib.publish._
+import mill.contrib.jmh.JmhModule
 
 val scalaVersions = Seq("2.13.16", "3.3.7")
 
@@ -60,6 +63,15 @@ trait JvmStreamsJvmModule extends CrossScalaModule with JvmStreamsModule {
   object test extends JvmTests {
     def moduleDeps = super.moduleDeps ++ Seq(core(crossScalaVersion))
   }
+}
+
+// ─── JMH Benchmarks ─────────────────────────────────────────────────────────
+
+object bench extends ScalaModule with JmhModule with ScalafmtModule {
+  private val benchScalaVersion = scalaVersions.head
+  def scalaVersion = benchScalaVersion
+  def jmhCoreVersion = "1.37"
+  def moduleDeps = Seq(core(benchScalaVersion))
 }
 
 // ─── Scala.js ───────────────────────────────────────────────────────────────
