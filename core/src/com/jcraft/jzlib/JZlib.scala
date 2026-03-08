@@ -361,6 +361,72 @@ object JZlib {
     System.arraycopy(output, 0, result, 0, totalOut)
     result
   }
+
+  /**
+   * One-shot decompression that also reports how many source bytes were consumed. This is useful when there is trailing
+   * data after the compressed stream.
+   *
+   * @param data
+   *   the compressed data (zlib format), possibly followed by trailing bytes
+   * @return
+   *   an [[UncompressResult]] containing the decompressed data and the number of input bytes consumed
+   * @throws ZStreamException
+   *   if decompression fails
+   */
+  def uncompress2(data: Array[Byte]): UncompressResult = {
+    val inflater = new Inflater()
+    inflater.init()
+
+    inflater.setInput(data)
+    inflater.setNextInIndex(0)
+    inflater.setAvailIn(data.length)
+
+    val initSize = math.min(data.length.toLong * 2, Int.MaxValue).toInt
+    var output   = new Array[Byte](math.max(initSize, 64))
+    var totalOut = 0
+    val buf      = new Array[Byte](8192)
+
+    var err = Z_OK
+    while (err != Z_STREAM_END) {
+      inflater.setOutput(buf)
+      inflater.setNextOutIndex(0)
+      inflater.setAvailOut(buf.length)
+
+      err = inflater.inflate(Z_NO_FLUSH)
+      if (err != Z_OK && err != Z_STREAM_END) {
+        inflater.end()
+        throw new ZStreamException(s"uncompress2 failed: ${inflater.getMessage}")
+      }
+
+      val produced = buf.length - inflater.getAvailOut
+      if (produced > 0) {
+        while (totalOut + produced > output.length) {
+          val newSize =
+            math.min(output.length.toLong * 2, Int.MaxValue).toInt
+          if (newSize <= output.length) {
+            inflater.end()
+            throw new ZStreamException(
+              "uncompress2: decompressed data exceeds maximum array size",
+            )
+          }
+          val grown   = new Array[Byte](newSize)
+          System.arraycopy(output, 0, grown, 0, totalOut)
+          output = grown
+        }
+        System.arraycopy(buf, 0, output, totalOut, produced)
+        totalOut += produced
+      }
+    }
+
+    val inputBytesUsed = inflater.getTotalIn.toInt
+    inflater.end()
+    val result         = new Array[Byte](totalOut)
+    System.arraycopy(output, 0, result, 0, totalOut)
+    UncompressResult(result, inputBytesUsed)
+  }
+
+  /** Result of [[uncompress2]], containing the decompressed data and the number of input bytes consumed. */
+  case class UncompressResult(data: Array[Byte], inputBytesUsed: Int)
 }
 
 // Kept for source compatibility – the companion object holds the real API.

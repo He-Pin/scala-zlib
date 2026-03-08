@@ -65,4 +65,33 @@ class JZlibUtilSuite extends munit.FunSuite {
     val decompressed = uncompress(compressed)
     assertEquals(decompressed.length, 0)
   }
+
+  test("uncompress2 returns correct data and input byte count") {
+    val original   = "Hello, uncompress2!".getBytes("UTF-8")
+    val compressed = compress(original)
+    val result     = uncompress2(compressed)
+    assertEquals(new String(result.data, "UTF-8"), new String(original, "UTF-8"))
+    assertEquals(result.inputBytesUsed, compressed.length)
+  }
+
+  test("uncompress2 with trailing bytes after compressed stream") {
+    val original   = "Data before trailing bytes".getBytes("UTF-8")
+    val compressed = compress(original)
+    val trailing   = Array[Byte](0xde.toByte, 0xad.toByte, 0xbe.toByte, 0xef.toByte)
+    val withExtra  = new Array[Byte](compressed.length + trailing.length)
+    System.arraycopy(compressed, 0, withExtra, 0, compressed.length)
+    System.arraycopy(trailing, 0, withExtra, compressed.length, trailing.length)
+
+    val result = uncompress2(withExtra)
+    assertEquals(new String(result.data, "UTF-8"), new String(original, "UTF-8"))
+    assertEquals(result.inputBytesUsed, compressed.length)
+  }
+
+  test("uncompress2 with exact-fit compressed data") {
+    val original   = Array.fill[Byte](10000)(42)
+    val compressed = compress(original)
+    val result     = uncompress2(compressed)
+    assert(original.sameElements(result.data))
+    assertEquals(result.inputBytesUsed, compressed.length)
+  }
 }
