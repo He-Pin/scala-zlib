@@ -40,6 +40,9 @@ class BenchmarkData {
   // Pre-compressed via ZOutputStream (for ZInputStream benchmarks)
   var zStreamCompressedSmall: Array[Byte] = _
 
+  // Pre-compressed 1 MB data (zlib wrapper, for utility uncompress benchmarks)
+  var compressedOneMB: Array[Byte] = _
+
   @Setup(Level.Trial)
   def setup(): Unit = {
     // ~1 KB of repetitive text
@@ -101,6 +104,9 @@ class BenchmarkData {
 
     // ZOutputStream-compressed data
     zStreamCompressedSmall = compressWithZOutputStream(smallData)
+
+    // 1 MB compressed data for utility uncompress benchmarks
+    compressedOneMB = compressZlib(oneMBData, JZlib.Z_DEFAULT_COMPRESSION)
   }
 
   private def compressZlib(data: Array[Byte], level: Int): Array[Byte] = {
@@ -568,4 +574,80 @@ class ChecksumBenchmark {
     val copy = crc.copy()
     bh.consume(copy.getValue)
   }
+}
+
+// ─── D. Utility Function Benchmarks ──────────────────────────────────────────
+
+@BenchmarkMode(Array(Mode.Throughput))
+@OutputTimeUnit(TimeUnit.SECONDS)
+@Warmup(iterations = 3, time = 1)
+@Measurement(iterations = 5, time = 1)
+@Fork(1)
+class UtilityBenchmark {
+
+  // ── JZlib.compress ──
+
+  @Benchmark
+  def compressSmall(state: BenchmarkData, bh: Blackhole): Unit =
+    bh.consume(JZlib.compress(state.smallData))
+
+  @Benchmark
+  def compressMedium(state: BenchmarkData, bh: Blackhole): Unit =
+    bh.consume(JZlib.compress(state.largeData))
+
+  @Benchmark
+  def compressLarge(state: BenchmarkData, bh: Blackhole): Unit =
+    bh.consume(JZlib.compress(state.oneMBData))
+
+  // ── JZlib.uncompress ──
+
+  @Benchmark
+  def uncompressSmall(state: BenchmarkData, bh: Blackhole): Unit =
+    bh.consume(JZlib.uncompress(state.compressedSmall))
+
+  @Benchmark
+  def uncompressMedium(state: BenchmarkData, bh: Blackhole): Unit =
+    bh.consume(JZlib.uncompress(state.compressedLarge))
+
+  @Benchmark
+  def uncompressLarge(state: BenchmarkData, bh: Blackhole): Unit =
+    bh.consume(JZlib.uncompress(state.compressedOneMB))
+
+  // ── JZlib.deflateBound ──
+
+  @Benchmark
+  def deflateBound1KB(bh: Blackhole): Unit =
+    bh.consume(JZlib.deflateBound(1024L))
+
+  @Benchmark
+  def deflateBound64KB(bh: Blackhole): Unit =
+    bh.consume(JZlib.deflateBound(65536L))
+
+  @Benchmark
+  def deflateBound1MB(bh: Blackhole): Unit =
+    bh.consume(JZlib.deflateBound(1048576L))
+
+  // ── JZlib.compressBound ──
+
+  @Benchmark
+  def compressBound1KB(bh: Blackhole): Unit =
+    bh.consume(JZlib.compressBound(1024L))
+
+  @Benchmark
+  def compressBound1MB(bh: Blackhole): Unit =
+    bh.consume(JZlib.compressBound(1048576L))
+
+  // ── JZlib.getErrorDescription ──
+
+  @Benchmark
+  def getErrorDescriptionOK(bh: Blackhole): Unit =
+    bh.consume(JZlib.getErrorDescription(JZlib.Z_OK))
+
+  @Benchmark
+  def getErrorDescriptionDataError(bh: Blackhole): Unit =
+    bh.consume(JZlib.getErrorDescription(JZlib.Z_DATA_ERROR))
+
+  @Benchmark
+  def getErrorDescriptionUnknown(bh: Blackhole): Unit =
+    bh.consume(JZlib.getErrorDescription(99))
 }
