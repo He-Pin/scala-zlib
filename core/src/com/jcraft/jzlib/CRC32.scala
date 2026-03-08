@@ -167,37 +167,43 @@ object CRC32 {
   /**
    * Multiplies `a(x)` by `b(x)` modulo the CRC polynomial in GF(2).
    *
-   * Both operands use the reflected bit order (LSB = highest power). The method requires `a != 0`.
+   * Both operands use the reflected bit order. Bit 31 represents x^0 (the identity), bit 30 represents x^1, and so on.
+   * The method scans `a` from MSB to LSB, matching the zlib C implementation.
    */
   private[jzlib] def multmodp(a: Int, b: Int): Int = {
-    var product = 0
-    var aa      = a
-    var bb      = b
-    while (aa != 0) {
-      if ((aa & 1) != 0) product ^= bb
-      aa >>>= 1
-      // shift b left by one in reflected representation
-      bb = if ((bb & 1) != 0) POLY ^ (bb >>> 1) else bb >>> 1
+    var m: Int = 1 << 31 // start at MSB (x^0)
+    var p: Int = 0
+    var bb     = b
+    var done   = false
+    while (!done) {
+      if ((a & m) != 0) {
+        p ^= bb
+        if ((a & (m - 1)) == 0) done = true
+      }
+      if (!done) {
+        m >>>= 1
+        bb = if ((bb & 1) != 0) (bb >>> 1) ^ POLY else bb >>> 1
+      }
     }
-    product
+    p
   }
 
   /**
-   * Returns x^(n + k) mod p(x) using the precomputed `x2n_table`.
+   * Returns x^(n * 2^k) mod p(x) using the precomputed `x2n_table`.
    *
-   * The parameter `k` shifts the starting power; for `combine` and `combineGen`, `k = 3` so that the result is x^(n+3)
-   * (accounting for the three powers consumed by the polynomial itself).
+   * For `combine` and `combineGen`, `k = 3` so that the result is x^(8*len2), i.e. the effect of appending len2 zero
+   * bytes.
    */
   private[jzlib] def x2nmodp(n: Long, k: Int): Int      = {
-    var p  = x2n_table(k)
-    var nn = n
-    var i  = k
+    var p: Int = 1 << 31 // x^0 == 1 (the multiplicative identity)
+    var nn     = n
+    var i      = k
     while (nn != 0) {
-      i += 1
       if ((nn & 1) != 0) {
         p = multmodp(x2n_table(i), p)
       }
       nn >>>= 1
+      i += 1
     }
     p
   }
