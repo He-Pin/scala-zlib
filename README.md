@@ -311,6 +311,93 @@ def decompress(data: Array[Byte], maxLen: Int = 65536): Array[Byte] = {
 ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
 ```
 
+## Migration from Deprecated APIs
+
+### ZStream → Deflater / Inflater
+
+The `ZStream` class is deprecated. Use `Deflater` for compression and `Inflater` for decompression.
+
+**Before (deprecated):**
+
+```scala
+val stream = new ZStream()
+stream.deflateInit(JZlib.Z_DEFAULT_COMPRESSION)
+stream.next_in = inputData
+stream.next_in_index = 0
+stream.avail_in = inputData.length
+stream.next_out = outputData
+stream.next_out_index = 0
+stream.avail_out = outputData.length
+stream.deflate(JZlib.Z_FINISH)
+stream.deflateEnd()
+```
+
+**After (recommended):**
+
+```scala
+val deflater = new Deflater()
+deflater.init(JZlib.Z_DEFAULT_COMPRESSION)
+deflater.setInput(inputData)
+deflater.setOutput(outputData)
+deflater.deflate(JZlib.Z_FINISH)
+deflater.end()
+```
+
+### ZOutputStream → DeflaterOutputStream
+
+**Before (deprecated):**
+
+```scala
+val zos = new ZOutputStream(outputStream, JZlib.Z_DEFAULT_COMPRESSION)
+zos.write(data)
+zos.close()
+```
+
+**After (recommended):**
+
+```scala
+val dos = new DeflaterOutputStream(outputStream)
+dos.write(data)
+dos.finish()
+dos.close()
+```
+
+### ZInputStream → InflaterInputStream
+
+**Before (deprecated):**
+
+```scala
+val zis = new ZInputStream(inputStream)
+val data = zis.readAllBytes()
+zis.close()
+```
+
+**After (recommended):**
+
+```scala
+val iis = new InflaterInputStream(inputStream)
+val data = iis.readAllBytes()
+iis.close()
+```
+
+### GZIPInputStream: getModifiedtime → getModifiedTime
+
+The `getModifiedtime()` method (lowercase 't') is deprecated. Use `getModifiedTime()` (uppercase 'T') instead.
+
+**Before (deprecated):**
+
+```scala
+val gzIn = new GZIPInputStream(inputStream)
+val mtime = gzIn.getModifiedtime()
+```
+
+**After (recommended):**
+
+```scala
+val gzIn = new GZIPInputStream(inputStream)
+val mtime = gzIn.getModifiedTime()
+```
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request.
