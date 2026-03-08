@@ -85,6 +85,13 @@ object bench extends ScalaModule with JmhModule with ScalafmtModule {
   def moduleDeps = Seq(core(benchScalaVersion))
 }
 
+// ─── Example ────────────────────────────────────────────────────────────────
+
+object example extends ScalaModule {
+  def scalaVersion = scalaVersions.head
+  def moduleDeps = Seq(core(scalaVersions.head))
+}
+
 // ─── Scala.js ───────────────────────────────────────────────────────────────
 
 object coreJS extends Cross[CoreJsModule](scalaVersions)
