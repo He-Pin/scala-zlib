@@ -276,8 +276,13 @@ object JZlib {
     deflater.setNextInIndex(0)
     deflater.setAvailIn(data.length)
 
-    val bound  = deflateBound(data.length.toLong).toInt
-    val output = new Array[Byte](bound)
+    val boundLong = deflateBound(data.length.toLong)
+    if (boundLong > Int.MaxValue)
+      throw new ZStreamException(
+        s"input too large for compress: ${data.length} bytes (max ~2GB)",
+      )
+    val bound     = boundLong.toInt
+    val output    = new Array[Byte](bound)
     deflater.setOutput(output)
     deflater.setNextOutIndex(0)
     deflater.setAvailOut(output.length)
@@ -314,7 +319,8 @@ object JZlib {
     inflater.setNextInIndex(0)
     inflater.setAvailIn(data.length)
 
-    var output   = new Array[Byte](math.max(data.length * 2, 64))
+    val initSize = math.min(data.length.toLong * 2, Int.MaxValue).toInt
+    var output   = new Array[Byte](math.max(initSize, 64))
     var totalOut = 0
     val buf      = new Array[Byte](8192)
 
@@ -333,7 +339,15 @@ object JZlib {
       val produced = buf.length - inflater.getAvailOut
       if (produced > 0) {
         while (totalOut + produced > output.length) {
-          val grown = new Array[Byte](output.length * 2)
+          val newSize =
+            math.min(output.length.toLong * 2, Int.MaxValue).toInt
+          if (newSize <= output.length) {
+            inflater.end()
+            throw new ZStreamException(
+              "uncompress: decompressed data exceeds maximum array size",
+            )
+          }
+          val grown   = new Array[Byte](newSize)
           System.arraycopy(output, 0, grown, 0, totalOut)
           output = grown
         }
