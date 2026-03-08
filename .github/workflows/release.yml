@@ -30,7 +30,7 @@ jobs:
           path: |
             ~/.cache/mill
             out/
-          key: mill-release-${{ runner.os }}-${{ hashFiles('build.sc', '.mill-version') }}
+          key: mill-release-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
       - name: Test all
         run: ./mill __.test
 
@@ -52,7 +52,7 @@ jobs:
           path: |
             ~/.cache/mill
             out/
-          key: mill-publish-${{ runner.os }}-${{ hashFiles('build.sc', '.mill-version') }}
+          key: mill-publish-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
       - name: Publish
         env:
           MILL_PGP_SECRET_KEY: ${{ secrets.MILL_PGP_SECRET_KEY }}
