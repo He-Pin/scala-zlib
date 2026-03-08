@@ -3,7 +3,7 @@
 [![Scala 2.13](https://img.shields.io/badge/Scala-2.13.16-red.svg)](https://www.scala-lang.org/)
 [![Scala 3](https://img.shields.io/badge/Scala-3.3.7-red.svg)](https://www.scala-lang.org/)
 [![License: BSD](https://img.shields.io/badge/License-BSD-blue.svg)](LICENSE.txt)
-[![CI](https://github.com/scala-zlib/scala-zlib/actions/workflows/ci.yml/badge.svg)](https://github.com/scala-zlib/scala-zlib/actions)
+[![CI](https://github.com/He-Pin/scala-zlib/actions/workflows/ci.yml/badge.svg)](https://github.com/He-Pin/scala-zlib/actions)
 [![JVM](https://img.shields.io/badge/Platform-JVM-blue.svg)](#platform-support)
 [![Scala.js](https://img.shields.io/badge/Platform-Scala.js_1.20.0-blue.svg)](#platform-support)
 [![Scala Native](https://img.shields.io/badge/Platform-Scala_Native_0.5.10-blue.svg)](#platform-support)
@@ -100,6 +100,15 @@ def ivyDeps = Agg(ivy"com.github.scala-zlib::scala-zlib-core::1.1.5")
 ```scala
 // All platforms — JVM, JS, Native, WASM
 libraryDependencies += "com.github.scala-zlib" %%% "scala-zlib-core" % "1.1.5"
+```
+
+### Gradle
+
+```gradle
+// Gradle (Kotlin DSL)
+implementation("com.github.scala-zlib:scala-zlib-core_2.13:1.1.5")
+// Or for Scala 3:
+implementation("com.github.scala-zlib:scala-zlib-core_3:1.1.5")
 ```
 
 ## Quick Start
@@ -423,6 +432,25 @@ val mtime = gzIn.getModifiedtime()
 val gzIn = new GZIPInputStream(inputStream)
 val mtime = gzIn.getModifiedTime()
 ```
+
+## Performance
+
+scala-zlib includes a comprehensive JMH benchmark suite covering all public APIs.
+
+### Running Benchmarks
+
+```bash
+# Run all benchmarks
+./mill bench.runJmh
+
+# Run specific benchmark class
+./mill bench.runJmh -- "DeflateInflateBenchmark"
+
+# Quick smoke test (1 iteration)
+./mill bench.runJmh -- -wi 1 -i 1 -f 1
+```
+
+Performance is comparable to the original Java jzlib implementation since the algorithm code is a faithful port preserving the same data structures and control flow.
 
 ## Contributing
 
