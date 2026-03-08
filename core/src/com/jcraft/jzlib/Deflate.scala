@@ -129,7 +129,7 @@ object Deflate {
   private final val HEAP_SIZE     = 2 * L_CODES + 1
   private final val END_BLOCK     = 256
 
-  private[jzlib] def smaller(tree: Array[Short], n: Int, m: Int, depth: Array[Byte]): Boolean = {
+  @inline private[jzlib] def smaller(tree: Array[Short], n: Int, m: Int, depth: Array[Byte]): Boolean = {
     val tn2 = tree(n * 2)
     val tm2 = tree(m * 2)
     tn2 < tm2 || (tn2 == tm2 && depth(n) <= depth(m))
@@ -397,8 +397,8 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     System.arraycopy(p, start, pending_buf, pending, len)
     pending += len
   }
-  final private[jzlib] def put_byte(c: Byte): Unit = { pending_buf(pending) = c; pending += 1 }
-  final private[jzlib] def put_short(w: Int): Unit = {
+  @inline final private[jzlib] def put_byte(c: Byte): Unit = { pending_buf(pending) = c; pending += 1 }
+  @inline final private[jzlib] def put_short(w: Int): Unit = {
     put_byte(w.toByte)
     put_byte((w >>> 8).toByte)
   }
@@ -407,7 +407,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     put_byte(b.toByte)
   }
 
-  final private[jzlib] def send_code(c: Int, tree: Array[Short]): Unit = {
+  @inline final private[jzlib] def send_code(c: Int, tree: Array[Short]): Unit = {
     val c2 = c * 2
     send_bits(tree(c2) & 0xffff, tree(c2 + 1) & 0xffff)
   }
@@ -510,7 +510,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     data_type = (if (bin_freq > (ascii_freq >>> 2)) Z_BINARY else Z_ASCII).toByte
   }
 
-  private[jzlib] def bi_flush(): Unit = {
+  @inline private[jzlib] def bi_flush(): Unit = {
     if (bi_valid == 16) {
       put_short(bi_buf)
       bi_buf   = 0
