@@ -33,10 +33,22 @@ import java.io.{ FilterInputStream, IOException, InputStream }
 import JZlib._
 
 /**
- * ZInputStream
+ * Legacy input stream that can both decompress and compress data.
  *
+ * '''This class is deprecated.''' Use [[InflaterInputStream]] for decompression and [[DeflaterOutputStream]] for
+ * compression instead.
+ *
+ * When constructed without a level, this stream reads and decompresses data from the underlying input (inflate mode).
+ * When constructed with a compression level, it reads and compresses data (deflate mode).
+ *
+ * @param in
+ *   underlying input stream
  * @deprecated
- *   use DeflaterOutputStream or InflaterInputStream
+ *   Use [[InflaterInputStream]] for decompression or [[DeflaterOutputStream]] for compression.
+ * @see
+ *   [[InflaterInputStream]]
+ * @see
+ *   [[DeflaterOutputStream]]
  */
 @deprecated("Use DeflaterOutputStream or InflaterInputStream", "1.1.5")
 class ZInputStream(in: InputStream) extends FilterInputStream(in) {
@@ -54,12 +66,28 @@ class ZInputStream(in: InputStream) extends FilterInputStream(in) {
     compress = false
   }
 
+  /**
+   * Creates a `ZInputStream` in inflate (decompression) mode with raw DEFLATE option.
+   *
+   * @param in
+   *   underlying input stream containing compressed data
+   * @param nowrap
+   *   if `true`, expect raw DEFLATE data without a zlib header/trailer
+   */
   def this(in: InputStream, nowrap: Boolean) = {
     this(in)
     iis = new InflaterInputStream(in, nowrap)
     compress = false
   }
 
+  /**
+   * Creates a `ZInputStream` in deflate (compression) mode.
+   *
+   * @param in
+   *   underlying input stream containing uncompressed data
+   * @param level
+   *   compression level (0–9, or [[JZlib.Z_DEFAULT_COMPRESSION]])
+   */
   def this(in: InputStream, level: Int) = {
     this(in)
     this.theIn = in

@@ -32,36 +32,97 @@ package com.jcraft.jzlib
 import java.io.{IOException, InputStream}
 import JZlib._
 
+/** Wraps an [[java.io.InputStream]] to decompress GZIP-compressed data (RFC 1952).
+  *
+  * Extends [[InflaterInputStream]] with GZIP header and trailer parsing. After decompression is
+  * complete, GZIP metadata (filename, comment, modification time, OS, CRC-32) is available via
+  * accessor methods.
+  *
+  * Usage:
+  * {{{
+  * val fis = new java.io.FileInputStream("data.gz")
+  * val gis = new GZIPInputStream(fis)
+  * val buf = new Array[Byte](1024)
+  * var n = gis.read(buf)
+  * while (n != -1) {
+  *   System.out.write(buf, 0, n)
+  *   n = gis.read(buf)
+  * }
+  * println("Original file: " + gis.getName())
+  * gis.close()
+  * }}}
+  *
+  * @param in
+  *   underlying input stream containing GZIP-compressed data
+  * @param inflater
+  *   the [[Inflater]] used for decompression (must be configured with GZIP wrapping, i.e. `wbits = 15 + 16`)
+  * @param size
+  *   internal buffer size in bytes (default 512)
+  * @param close_in
+  *   whether [[close()]] should also close the underlying stream (default `true`)
+  * @see [[GZIPOutputStream]] for compression
+  * @see [[InflaterInputStream]] for zlib-wrapped decompression
+  */
 class GZIPInputStream(in: InputStream,
                        inflater: Inflater,
                        size: Int,
                        close_in: Boolean)
   extends InflaterInputStream(in, inflater, size, close_in) {
 
+  /** Creates a `GZIPInputStream` with the given buffer size and close behavior.
+    *
+    * An [[Inflater]] configured for GZIP wrapping is created automatically.
+    *
+    * @param in
+    *   underlying input stream
+    * @param size
+    *   internal buffer size in bytes
+    * @param close_in
+    *   whether [[close()]] should also close the underlying stream
+    */
   def this(in: InputStream, size: Int, close_in: Boolean) = {
     this(in, new Inflater(15 + 16), size, close_in)
     myinflater = true
   }
 
+  /** Creates a `GZIPInputStream` with the default buffer size (512 bytes).
+    *
+    * @param in
+    *   underlying input stream containing GZIP-compressed data
+    */
   def this(in: InputStream) =
     this(in, InflaterInputStream.DEFAULT_BUFSIZE, true)
 
-  /** @deprecated use getModifiedTime() */
+  /** Returns the modification time from the GZIP header, in seconds since the Unix epoch.
+    *
+    * @deprecated Use [[getModifiedTime()]] instead (note the capital 'T').
+    */
   @deprecated("Use getModifiedTime()", "1.1.5")
   def getModifiedtime(): Long = this.getModifiedTime()
 
+  /** Returns the modification time from the GZIP header, in seconds since the Unix epoch. */
   def getModifiedTime(): Long =
     inflater.istate.getGZIPHeader.getModifiedTime
 
+  /** Returns the OS field from the GZIP header (see RFC 1952 section 2.3.1). */
   def getOS(): Int =
     inflater.istate.getGZIPHeader.getOS
 
+  /** Returns the original filename from the GZIP header, or `null` if not set. */
   def getName(): String =
     inflater.istate.getGZIPHeader.getName
 
+  /** Returns the comment from the GZIP header, or `null` if not set. */
   def getComment(): String =
     inflater.istate.getGZIPHeader.getComment
 
+  /** Returns the CRC-32 checksum of the decompressed data.
+    *
+    * Available only after all data has been read (i.e. [[read()]] has returned -1).
+    *
+    * @throws GZIPException
+    *   if decompression is not yet complete
+    */
   def getCRC(): Long = {
     if (inflater.istate.mode != 12 /*DONE*/)
       throw new GZIPException("checksum is not calculated yet.")

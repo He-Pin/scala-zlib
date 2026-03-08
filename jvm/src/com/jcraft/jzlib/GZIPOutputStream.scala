@@ -32,17 +32,73 @@ package com.jcraft.jzlib
 import java.io.{ IOException, OutputStream }
 import JZlib._
 
+/**
+ * Wraps an [[java.io.OutputStream]] to compress written data in GZIP format (RFC 1952).
+ *
+ * Extends [[DeflaterOutputStream]] with GZIP header and trailer handling. The GZIP header fields (filename, comment,
+ * modification time, OS) can be set before writing any data.
+ *
+ * Usage:
+ * {{{
+ * val fos = new java.io.FileOutputStream("data.gz")
+ * val gos = new GZIPOutputStream(fos)
+ * gos.setName("data.txt")
+ * gos.setComment("example file")
+ * gos.write("Hello, World!".getBytes("UTF-8"))
+ * gos.finish()
+ * gos.close()
+ * }}}
+ *
+ * @param out
+ *   underlying output stream to write GZIP-compressed data to
+ * @param deflater
+ *   the [[Deflater]] used for compression (must be configured with GZIP wrapping, i.e. `wbits = 15 + 16`)
+ * @param size
+ *   internal buffer size in bytes (default 512)
+ * @param close_out
+ *   whether [[close()]] should also close the underlying stream (default `true`)
+ * @see
+ *   [[GZIPInputStream]] for decompression
+ * @see
+ *   [[DeflaterOutputStream]] for zlib-wrapped compression
+ */
 class GZIPOutputStream(out: OutputStream, deflater: Deflater, size: Int, close_out: Boolean)
     extends DeflaterOutputStream(out, deflater, size, close_out) {
 
+  /**
+   * Creates a `GZIPOutputStream` with the given buffer size and close behavior.
+   *
+   * A [[Deflater]] configured for GZIP wrapping is created automatically.
+   *
+   * @param out
+   *   underlying output stream
+   * @param size
+   *   internal buffer size in bytes
+   * @param close_out
+   *   whether [[close()]] should also close the underlying stream
+   */
   def this(out: OutputStream, size: Int, close_out: Boolean) = {
     this(out, new Deflater(Z_DEFAULT_COMPRESSION, 15 + 16), size, close_out)
     mydeflater = true
   }
 
+  /**
+   * Creates a `GZIPOutputStream` with the given buffer size. The underlying stream is closed on [[close()]].
+   *
+   * @param out
+   *   underlying output stream
+   * @param size
+   *   internal buffer size in bytes
+   */
   def this(out: OutputStream, size: Int) =
     this(out, size, true)
 
+  /**
+   * Creates a `GZIPOutputStream` with the default buffer size (512 bytes).
+   *
+   * @param out
+   *   underlying output stream
+   */
   def this(out: OutputStream) =
     this(out, DeflaterOutputStream.DEFAULT_BUFSIZE)
 
@@ -51,21 +107,53 @@ class GZIPOutputStream(out: OutputStream, deflater: Deflater, size: Int, close_o
       throw new GZIPException("header is already written.")
   }
 
+  /**
+   * Sets the modification time in the GZIP header. Must be called before writing any data.
+   *
+   * @param mtime
+   *   modification time in seconds since the Unix epoch
+   * @throws GZIPException
+   *   if data has already been written
+   */
   def setModifiedTime(mtime: Long): Unit = {
     check()
     deflater.dstate.getGZIPHeader().setModifiedTime(mtime)
   }
 
+  /**
+   * Sets the OS field in the GZIP header. Must be called before writing any data.
+   *
+   * @param os
+   *   OS identifier (see RFC 1952 section 2.3.1)
+   * @throws GZIPException
+   *   if data has already been written
+   */
   def setOS(os: Int): Unit = {
     check()
     deflater.dstate.getGZIPHeader().setOS(os)
   }
 
+  /**
+   * Sets the original filename in the GZIP header. Must be called before writing any data.
+   *
+   * @param name
+   *   the original filename
+   * @throws GZIPException
+   *   if data has already been written
+   */
   def setName(name: String): Unit = {
     check()
     deflater.dstate.getGZIPHeader().setName(name)
   }
 
+  /**
+   * Sets the comment in the GZIP header. Must be called before writing any data.
+   *
+   * @param comment
+   *   the comment string
+   * @throws GZIPException
+   *   if data has already been written
+   */
   def setComment(comment: String): Unit = {
     check()
     deflater.dstate.getGZIPHeader().setComment(comment)
@@ -80,6 +168,15 @@ class GZIPOutputStream(out: OutputStream, deflater: Deflater, size: Int, close_o
       _crc = deflater.dstate.getGZIPHeader().getCRC
   }
 
+  /**
+   * Returns the CRC-32 checksum of the uncompressed data.
+   *
+   * This value is available after [[finish()]] has been called. It can also be retrieved after [[close()]] since the
+   * CRC is cached internally.
+   *
+   * @throws GZIPException
+   *   if the stream has not been finished yet
+   */
   def getCRC(): Long = {
     if (_crc >= 0) return _crc
     if (deflater.dstate == null || deflater.dstate.status != 666 /*FINISH_STATE*/ )

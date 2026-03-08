@@ -33,10 +33,22 @@ import java.io.{ FilterOutputStream, IOException, OutputStream }
 import JZlib._
 
 /**
- * ZOutputStream
+ * Legacy output stream that can both compress and decompress data.
  *
+ * '''This class is deprecated.''' Use [[DeflaterOutputStream]] for compression and [[InflaterInputStream]] for
+ * decompression instead.
+ *
+ * When constructed with a compression level, this stream compresses data written to it (deflate mode). When constructed
+ * without a level, it decompresses data written to it (inflate mode) and writes the result to the underlying stream.
+ *
+ * @param out
+ *   underlying output stream
  * @deprecated
- *   use DeflaterOutputStream or InflaterInputStream
+ *   Use [[DeflaterOutputStream]] for compression or [[InflaterInputStream]] for decompression.
+ * @see
+ *   [[DeflaterOutputStream]]
+ * @see
+ *   [[InflaterInputStream]]
  */
 @deprecated("Use DeflaterOutputStream or InflaterInputStream", "1.1.5")
 class ZOutputStream(out: OutputStream) extends FilterOutputStream(out) {
@@ -61,6 +73,14 @@ class ZOutputStream(out: OutputStream) extends FilterOutputStream(out) {
     compress = false
   }
 
+  /**
+   * Creates a `ZOutputStream` in deflate (compression) mode.
+   *
+   * @param out
+   *   underlying output stream
+   * @param level
+   *   compression level (0–9, or [[JZlib.Z_DEFAULT_COMPRESSION]])
+   */
   def this(out: OutputStream, level: Int) = {
     this(out)
     this.theOut = out
@@ -69,6 +89,16 @@ class ZOutputStream(out: OutputStream) extends FilterOutputStream(out) {
     compress = true
   }
 
+  /**
+   * Creates a `ZOutputStream` in deflate (compression) mode with raw DEFLATE option.
+   *
+   * @param out
+   *   underlying output stream
+   * @param level
+   *   compression level (0–9, or [[JZlib.Z_DEFAULT_COMPRESSION]])
+   * @param nowrap
+   *   if `true`, produce raw DEFLATE without a zlib header/trailer
+   */
   def this(out: OutputStream, level: Int, nowrap: Boolean) = {
     this(out)
     this.theOut = out

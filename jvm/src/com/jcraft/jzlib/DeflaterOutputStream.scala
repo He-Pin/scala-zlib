@@ -36,6 +36,37 @@ object DeflaterOutputStream {
   private[jzlib] final val DEFAULT_BUFSIZE = 512
 }
 
+/**
+ * Wraps an [[java.io.OutputStream]] to compress written data using the DEFLATE algorithm (RFC 1951).
+ *
+ * All data written to this stream is compressed via the supplied [[Deflater]] and forwarded to the underlying output
+ * stream. Call [[finish()]] to complete the compressed stream before closing.
+ *
+ * By default the stream uses zlib wrapping (RFC 1950). For raw deflate or GZIP wrapping, supply a [[Deflater]]
+ * configured with the desired wrapper type.
+ *
+ * Usage:
+ * {{{
+ * val fos = new java.io.FileOutputStream("data.zlib")
+ * val dos = new DeflaterOutputStream(fos)
+ * dos.write("Hello, World!".getBytes("UTF-8"))
+ * dos.finish()
+ * dos.close()
+ * }}}
+ *
+ * @param out
+ *   underlying output stream to write compressed data to
+ * @param deflater
+ *   the [[Deflater]] used to compress data
+ * @param size
+ *   internal buffer size in bytes (must be &gt; 0, default 512)
+ * @param close_out
+ *   whether [[close()]] should also close the underlying stream (default `true`)
+ * @see
+ *   [[InflaterInputStream]] for decompression
+ * @see
+ *   [[GZIPOutputStream]] for GZIP format compression
+ */
 class DeflaterOutputStream(out: OutputStream, val deflater: Deflater, size: Int, close_out: Boolean)
     extends FilterOutputStream(out) {
 
@@ -52,22 +83,53 @@ class DeflaterOutputStream(out: OutputStream, val deflater: Deflater, size: Int,
 
   protected var mydeflater: Boolean = false
 
+  /**
+   * Creates a `DeflaterOutputStream` with default compression level and buffer size (512 bytes).
+   *
+   * @param out
+   *   underlying output stream
+   */
   def this(out: OutputStream) = {
     this(out, new Deflater(JZlib.Z_DEFAULT_COMPRESSION), DeflaterOutputStream.DEFAULT_BUFSIZE, true)
     mydeflater = true
   }
 
+  /**
+   * Creates a `DeflaterOutputStream` with the given deflater and default buffer size (512 bytes).
+   *
+   * @param out
+   *   underlying output stream
+   * @param deflater
+   *   the [[Deflater]] to use
+   */
   def this(out: OutputStream, deflater: Deflater) =
     this(out, deflater, DeflaterOutputStream.DEFAULT_BUFSIZE, true)
 
+  /**
+   * Creates a `DeflaterOutputStream` with the given deflater and buffer size.
+   *
+   * @param out
+   *   underlying output stream
+   * @param deflater
+   *   the [[Deflater]] to use
+   * @param size
+   *   internal buffer size in bytes
+   */
   def this(out: OutputStream, deflater: Deflater, size: Int) =
     this(out, deflater, size, true)
 
+  /** Writes a single byte to the compressed stream. */
   override def write(b: Int): Unit = {
     buf1(0) = (b & 0xff).toByte
     write(buf1, 0, 1)
   }
 
+  /**
+   * Writes `len` bytes from the byte array `b` starting at offset `off` to the compressed stream.
+   *
+   * @throws IOException
+   *   if the deflater has already finished or a deflation error occurs
+   */
   override def write(b: Array[Byte], off: Int, len: Int): Unit = {
     if (deflater.finished()) {
       throw new IOException("finished")
@@ -86,12 +148,19 @@ class DeflaterOutputStream(out: OutputStream, val deflater: Deflater, size: Int,
     }
   }
 
+  /**
+   * Finishes writing compressed data without closing the underlying stream.
+   *
+   * Flushes all remaining compressed data and writes the stream trailer. After calling this method, no more data can be
+   * written. Call this before [[close()]] when multiple compressed streams are written to the same underlying output.
+   */
   def finish(): Unit = {
     while (!deflater.finished()) {
       deflate(Z_FINISH)
     }
   }
 
+  /** Finishes compression and closes this stream and, if `close_out` is `true`, the underlying stream. */
   override def close(): Unit = {
     if (!closed) {
       finish()
@@ -136,14 +205,24 @@ class DeflaterOutputStream(out: OutputStream, val deflater: Deflater, size: Int,
     out.flush()
   }
 
+  /** Returns the total number of uncompressed bytes written to this stream. */
   def getTotalIn(): Long = deflater.getTotalIn
 
+  /** Returns the total number of compressed bytes written to the underlying stream. */
   def getTotalOut(): Long = deflater.getTotalOut
 
+  /**
+   * Enables or disables sync-flush mode.
+   *
+   * When enabled, [[flush()]] uses `Z_SYNC_FLUSH` so the compressed output is aligned to a byte boundary, allowing the
+   * receiver to decompress all data written so far.
+   */
   def setSyncFlush(syncFlush: Boolean): Unit =
     this.syncFlush = syncFlush
 
+  /** Returns whether sync-flush mode is enabled. */
   def getSyncFlush(): Boolean = this.syncFlush
 
+  /** Returns the underlying [[Deflater]] used by this stream. */
   def getDeflater(): Deflater = deflater
 }
