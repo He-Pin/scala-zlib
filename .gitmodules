@@ -1,3 +1,6 @@
 [submodule "references/jzlib"]
 	path = references/jzlib
 	url = https://github.com/jruby/jzlib.git
+[submodule "references/zlib"]
+	path = references/zlib
+	url = https://github.com/madler/zlib.git
