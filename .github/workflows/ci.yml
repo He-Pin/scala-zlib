@@ -20,13 +20,17 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - name: Cache Mill
+      - name: Cache Mill & Coursier
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/mill
+            ~/.cache/coursier
             out/
-          key: mill-fmt-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
+          key: mill-21-${{ runner.os }}-fmt-${{ hashFiles('build.mill', '.mill-version') }}
+          restore-keys: |
+            mill-21-${{ runner.os }}-fmt-
+            mill-21-${{ runner.os }}-
       - name: Check scalafmt
         run: ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
 
@@ -47,13 +51,17 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
-      - name: Cache Mill
+      - name: Cache Mill & Coursier
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/mill
+            ~/.cache/coursier
             out/
-          key: mill-jvm-${{ runner.os }}-java${{ matrix.java }}-${{ hashFiles('build.mill', '.mill-version') }}
+          key: mill-${{ matrix.java }}-${{ runner.os }}-jvm-${{ hashFiles('build.mill', '.mill-version') }}
+          restore-keys: |
+            mill-${{ matrix.java }}-${{ runner.os }}-jvm-
+            mill-${{ matrix.java }}-${{ runner.os }}-
       - name: Test JVM (Scala 2.13 + 3.3)
         run: |
           ./mill core[2.13.16].test
@@ -75,13 +83,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Cache Mill
+      - name: Cache Mill & Coursier
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/mill
+            ~/.cache/coursier
             out/
-          key: mill-js-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
+          key: mill-21-${{ runner.os }}-js-${{ hashFiles('build.mill', '.mill-version') }}
+          restore-keys: |
+            mill-21-${{ runner.os }}-js-
+            mill-21-${{ runner.os }}-
       - name: Test coreJS
         run: ./mill coreJS[2.13.16].test + coreJS[3.3.7].test
 
@@ -100,13 +112,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang libstdc++-12-dev zlib1g-dev
-      - name: Cache Mill
+      - name: Cache Mill & Coursier
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/mill
+            ~/.cache/coursier
             out/
-          key: mill-native-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
+          key: mill-21-${{ runner.os }}-native-${{ hashFiles('build.mill', '.mill-version') }}
+          restore-keys: |
+            mill-21-${{ runner.os }}-native-
+            mill-21-${{ runner.os }}-
       - name: Test coreNative
         run: ./mill coreNative[2.13.16].test + coreNative[3.3.7].test
 
@@ -121,14 +137,17 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - name: Cache Mill
+      - name: Cache Mill & Coursier
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/mill
+            ~/.cache/coursier
             out/
-          key: mill-native-win-${{ hashFiles('build.mill', '.mill-version') }}
-          restore-keys: mill-native-win-
+          key: mill-21-${{ runner.os }}-native-${{ hashFiles('build.mill', '.mill-version') }}
+          restore-keys: |
+            mill-21-${{ runner.os }}-native-
+            mill-21-${{ runner.os }}-
       - name: Test coreNative (Windows)
         shell: bash
         run: |
@@ -150,13 +169,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Cache Mill
+      - name: Cache Mill & Coursier
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/mill
+            ~/.cache/coursier
             out/
-          key: mill-wasm-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
+          key: mill-21-${{ runner.os }}-wasm-${{ hashFiles('build.mill', '.mill-version') }}
+          restore-keys: |
+            mill-21-${{ runner.os }}-wasm-
+            mill-21-${{ runner.os }}-
       - name: Test coreWASM
         run: ./mill coreWASM[2.13.16].test + coreWASM[3.3.7].test
 
@@ -172,12 +195,16 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - name: Cache Mill
+      - name: Cache Mill & Coursier
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/mill
+            ~/.cache/coursier
             out/
-          key: mill-bench-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
+          key: mill-21-${{ runner.os }}-bench-${{ hashFiles('build.mill', '.mill-version') }}
+          restore-keys: |
+            mill-21-${{ runner.os }}-bench-
+            mill-21-${{ runner.os }}-
       - name: Compile benchmarks
         run: ./mill bench.compile
