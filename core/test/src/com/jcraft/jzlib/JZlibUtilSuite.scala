@@ -192,4 +192,82 @@ class JZlibUtilSuite extends munit.FunSuite {
     assert(original.sameElements(result.data))
     assertEquals(result.inputBytesUsed, compressed.length)
   }
+
+  test("gzip and gunzip round-trip") {
+    val original     = "Hello, World! This is a test of one-shot GZIP compression.".getBytes("UTF-8")
+    val compressed   = gzip(original)
+    val decompressed = gunzip(compressed)
+    assertEquals(new String(decompressed, "UTF-8"), new String(original, "UTF-8"))
+  }
+
+  test("gzip and gunzip round-trip with large data") {
+    val original     = Array.fill[Byte](100000)((scala.util.Random.nextInt(256) - 128).toByte)
+    val compressed   = gzip(original)
+    val decompressed = gunzip(compressed)
+    assert(original.sameElements(decompressed))
+  }
+
+  test("gzip produces valid GZIP data (magic bytes 0x1f, 0x8b)") {
+    val original   = "Test GZIP magic bytes".getBytes("UTF-8")
+    val compressed = gzip(original)
+    assert(compressed.length >= 2, "GZIP output must be at least 2 bytes")
+    assertEquals(compressed(0) & 0xff, 0x1f, "First magic byte must be 0x1f")
+    assertEquals(compressed(1) & 0xff, 0x8b, "Second magic byte must be 0x8b")
+  }
+
+  test("gunzip of known GZIP data") {
+    // Compress with gzip, then verify gunzip reproduces the original
+    val original     = Array.fill[Byte](1000)(0x42.toByte)
+    val compressed   = gzip(original)
+    // Verify it starts with GZIP magic
+    assertEquals(compressed(0) & 0xff, 0x1f)
+    assertEquals(compressed(1) & 0xff, 0x8b)
+    // Decompress and check
+    val decompressed = gunzip(compressed)
+    assert(original.sameElements(decompressed))
+  }
+
+  test("gzip empty array") {
+    val original     = new Array[Byte](0)
+    val compressed   = gzip(original)
+    assert(compressed.length > 0, "GZIP of empty array should produce non-empty output (header/trailer)")
+    assertEquals(compressed(0) & 0xff, 0x1f)
+    assertEquals(compressed(1) & 0xff, 0x8b)
+    val decompressed = gunzip(compressed)
+    assertEquals(decompressed.length, 0)
+  }
+
+  test("compressBound with level parameter") {
+    // For non-zero levels, should equal deflateBound
+    assertEquals(compressBound(1000L, Z_DEFAULT_COMPRESSION), deflateBound(1000L))
+    assertEquals(compressBound(1000L, Z_BEST_SPEED), deflateBound(1000L))
+    assertEquals(compressBound(1000L, Z_BEST_COMPRESSION), deflateBound(1000L))
+
+    // For level 0, should account for stored-block overhead
+    val level0Bound = compressBound(100000L, Z_NO_COMPRESSION)
+    assert(level0Bound > 100000L, "Level 0 bound must be > source length")
+
+    // Verify level 0 bound is actually sufficient
+    val original   = Array.fill[Byte](100000)((scala.util.Random.nextInt(256) - 128).toByte)
+    val compressed = {
+      val d      = new Deflater()
+      d.init(Z_NO_COMPRESSION)
+      d.setInput(original)
+      d.setNextInIndex(0)
+      d.setAvailIn(original.length)
+      val bound  = compressBound(original.length.toLong, Z_NO_COMPRESSION).toInt
+      val output = new Array[Byte](bound)
+      d.setOutput(output)
+      d.setNextOutIndex(0)
+      d.setAvailOut(output.length)
+      d.deflate(Z_FINISH)
+      val len    = output.length - d.getAvailOut
+      d.end()
+      len
+    }
+    assert(
+      compressed <= level0Bound,
+      s"level=0: compressed=$compressed > bound=$level0Bound",
+    )
+  }
 }

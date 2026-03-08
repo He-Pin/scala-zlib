@@ -274,6 +274,30 @@ object JZlib {
   def compressBound(sourceLen: Long): Long = deflateBound(sourceLen)
 
   /**
+   * Returns an upper bound on the compressed size, taking the compression level into account.
+   *
+   * For level 0 (stored/no compression), the bound accounts for stored-block framing: each stored block carries a
+   * 5-byte header and may hold at most 16383 bytes of payload, so the overhead is `5 * (sourceLen / 16383 + 1)` plus
+   * wrapper overhead. For all other levels the result is the same as [[deflateBound(sourceLen:Long)*]].
+   *
+   * @param sourceLen
+   *   the length of uncompressed data
+   * @param level
+   *   the compression level (0–9 or [[Z_DEFAULT_COMPRESSION]])
+   * @return
+   *   upper bound on compressed size
+   */
+  def compressBound(sourceLen: Long, level: Int): Long = {
+    if (level == Z_NO_COMPRESSION) {
+      // stored blocks: 5-byte header per block, max 16383 bytes per block, plus wrapper
+      val numBlocks = sourceLen / 16383 + 1
+      sourceLen + 5 * numBlocks + 18
+    } else {
+      deflateBound(sourceLen)
+    }
+  }
+
+  /**
    * One-shot compression using default settings ([[Z_DEFAULT_COMPRESSION]], [[W_ZLIB]]).
    *
    * @param data
@@ -308,6 +332,56 @@ object JZlib {
     if (err != Z_STREAM_END) {
       deflater.end()
       throw new ZStreamException(s"compress failed: ${deflater.getMessage}")
+    }
+
+    val compressedLen = output.length - deflater.getAvailOut
+    deflater.end()
+
+    val result = new Array[Byte](compressedLen)
+    System.arraycopy(output, 0, result, 0, compressedLen)
+    result
+  }
+
+  /**
+   * One-shot GZIP compression using default settings ([[Z_DEFAULT_COMPRESSION]], [[W_GZIP]]).
+   *
+   * Produces output in GZIP format (RFC 1952) with a standard GZIP header and CRC-32 trailer.
+   *
+   * @param data
+   *   the uncompressed data
+   * @return
+   *   GZIP-compressed data as a byte array
+   * @throws ZStreamException
+   *   if compression fails
+   * @see
+   *   [[compress]] for zlib-format compression
+   * @see
+   *   [[gunzip]] for the corresponding decompression
+   */
+  def gzip(data: Array[Byte]): Array[Byte] = {
+    if (data == null)
+      throw new ZStreamException("gzip: null input data")
+    val deflater = Deflater(Z_DEFAULT_COMPRESSION, W_GZIP)
+
+    deflater.setInput(data)
+    deflater.setNextInIndex(0)
+    deflater.setAvailIn(data.length)
+
+    val boundLong = deflateBound(data.length.toLong)
+    if (boundLong > Int.MaxValue)
+      throw new ZStreamException(
+        s"input too large for gzip: ${data.length} bytes (max ~2GB)",
+      )
+    val bound     = boundLong.toInt
+    val output    = new Array[Byte](bound)
+    deflater.setOutput(output)
+    deflater.setNextOutIndex(0)
+    deflater.setAvailOut(output.length)
+
+    val err = deflater.deflate(Z_FINISH)
+    if (err != Z_STREAM_END) {
+      deflater.end()
+      throw new ZStreamException(s"gzip failed: ${deflater.getMessage}")
     }
 
     val compressedLen = output.length - deflater.getAvailOut
@@ -364,6 +438,74 @@ object JZlib {
             inflater.end()
             throw new ZStreamException(
               "uncompress: decompressed data exceeds maximum array size",
+            )
+          }
+          val grown   = new Array[Byte](newSize)
+          System.arraycopy(output, 0, grown, 0, totalOut)
+          output = grown
+        }
+        System.arraycopy(buf, 0, output, totalOut, produced)
+        totalOut += produced
+      }
+    }
+
+    inflater.end()
+    val result = new Array[Byte](totalOut)
+    System.arraycopy(output, 0, result, 0, totalOut)
+    result
+  }
+
+  /**
+   * One-shot GZIP decompression.
+   *
+   * Decompresses data in GZIP format (RFC 1952).
+   *
+   * @param data
+   *   the GZIP-compressed data
+   * @return
+   *   decompressed data as a byte array
+   * @throws ZStreamException
+   *   if decompression fails or the data is not valid GZIP
+   * @see
+   *   [[uncompress]] for zlib-format decompression
+   * @see
+   *   [[gzip]] for the corresponding compression
+   */
+  def gunzip(data: Array[Byte]): Array[Byte] = {
+    if (data == null)
+      throw new ZStreamException("gunzip: null input data")
+    val inflater = Inflater(W_GZIP)
+
+    inflater.setInput(data)
+    inflater.setNextInIndex(0)
+    inflater.setAvailIn(data.length)
+
+    val initSize = math.min(data.length.toLong * 2, Int.MaxValue).toInt
+    var output   = new Array[Byte](math.max(initSize, 64))
+    var totalOut = 0
+    val buf      = new Array[Byte](8192)
+
+    var err = Z_OK
+    while (err != Z_STREAM_END) {
+      inflater.setOutput(buf)
+      inflater.setNextOutIndex(0)
+      inflater.setAvailOut(buf.length)
+
+      err = inflater.inflate(Z_NO_FLUSH)
+      if (err != Z_OK && err != Z_STREAM_END) {
+        inflater.end()
+        throw new ZStreamException(s"gunzip failed: ${inflater.getMessage}")
+      }
+
+      val produced = buf.length - inflater.getAvailOut
+      if (produced > 0) {
+        while (totalOut + produced > output.length) {
+          val newSize =
+            math.min(output.length.toLong * 2, Int.MaxValue).toInt
+          if (newSize <= output.length) {
+            inflater.end()
+            throw new ZStreamException(
+              "gunzip: decompressed data exceeds maximum array size",
             )
           }
           val grown   = new Array[Byte](newSize)
