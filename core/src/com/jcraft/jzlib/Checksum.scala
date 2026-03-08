@@ -34,10 +34,28 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jzlib
 
+/**
+ * Interface for checksum algorithms used in zlib compression.
+ *
+ * Implemented by [[Adler32]] (used in ZLIB wrapper, RFC 1950) and [[CRC32]] (used in GZIP wrapper, RFC 1952).
+ *
+ * Both implementations also provide a `combine` method on their companion objects for merging independently computed
+ * checksums.
+ */
 trait Checksum {
+
+  /** Updates the checksum with bytes from `buf(index)` to `buf(index + len - 1)`. */
   def update(buf: Array[Byte], index: Int, len: Int): Unit
+
+  /** Resets the checksum to its initial value. */
   def reset(): Unit
+
+  /** Resets the checksum to a caller-supplied value. */
   def reset(init: Long): Unit
+
+  /** Returns the current checksum value. */
   def getValue: Long
+
+  /** Returns an independent copy of this checksum with the same state. */
   def copy(): Checksum
 }

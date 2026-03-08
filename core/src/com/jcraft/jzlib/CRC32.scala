@@ -34,6 +34,16 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jzlib
 
+/**
+ * CRC-32 checksum as defined in RFC 1952, used by the GZIP wrapper format.
+ *
+ * Produces the same results as `java.util.zip.CRC32` but works on all Scala platforms (JVM, Scala.js, Scala Native,
+ * WASM).
+ *
+ * Instances are '''not''' thread-safe; each thread should use its own instance.
+ *
+ * To merge checksums computed over separate data segments, use [[CRC32$.combine `CRC32.combine`]].
+ */
 final class CRC32 extends Checksum {
 
   private var v: Int = 0
@@ -63,6 +73,7 @@ final class CRC32 extends Checksum {
   }
 }
 
+/** Companion providing the CRC-32 lookup table and [[combine]] utility. */
 object CRC32 {
   /*
    * The following logic has come from RFC1952.
@@ -86,6 +97,21 @@ object CRC32 {
 
   private final val GF2_DIM = 32
 
+  /**
+   * Combines two CRC-32 checksums into the checksum of the concatenated data.
+   *
+   * Given `crc1 = crc32(data1)` and `crc2 = crc32(data2)`, returns `crc32(data1 ++ data2)` without access to the
+   * original data.
+   *
+   * @param crc1
+   *   checksum of the first segment
+   * @param crc2
+   *   checksum of the second segment
+   * @param len2
+   *   byte length of the second segment
+   * @return
+   *   combined CRC-32 checksum
+   */
   // The following logic has come from zlib.1.2.
   def combine(crc1: Long, crc2: Long, len2: Long): Long = {
     if (len2 <= 0) return crc1

@@ -34,6 +34,16 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jzlib
 
+/**
+ * Adler-32 checksum as defined in RFC 1950, used by the ZLIB wrapper format.
+ *
+ * Produces the same results as `java.util.zip.Adler32` but works on all Scala platforms (JVM, Scala.js, Scala Native,
+ * WASM).
+ *
+ * Instances are '''not''' thread-safe; each thread should use its own instance.
+ *
+ * To merge checksums computed over separate data segments, use [[Adler32$.combine `Adler32.combine`]].
+ */
 final class Adler32 extends Checksum {
 
   // largest prime smaller than 65536
@@ -98,7 +108,24 @@ final class Adler32 extends Checksum {
   }
 }
 
+/** Companion providing the [[combine]] utility for merging Adler-32 checksums. */
 object Adler32 {
+
+  /**
+   * Combines two Adler-32 checksums into the checksum of the concatenated data.
+   *
+   * Given `adler1 = adler32(data1)` and `adler2 = adler32(data2)`, returns `adler32(data1 ++ data2)` without access to
+   * the original data.
+   *
+   * @param adler1
+   *   checksum of the first segment
+   * @param adler2
+   *   checksum of the second segment
+   * @param len2
+   *   byte length of the second segment
+   * @return
+   *   combined Adler-32 checksum
+   */
   // The following logic has come from zlib.1.2.
   def combine(adler1: Long, adler2: Long, len2: Long): Long = {
     val BASEL      = 65521L
