@@ -13,9 +13,19 @@ val scalaVersions = Seq("2.13.16", "3.3.7")
 val munitVersion  = "1.0.3"
 
 /** Shared compiler options and formatting for all modules. */
-trait ZlibModule extends ScalaModule with ScalafmtModule {
+trait ZlibModule extends ScalaModule with ScalafmtModule with PublishModule {
   def publishVersion = "1.1.5"
-  def organization   = "com.github.scala-zlib"
+
+  def pomSettings = PomSettings(
+    description = "Pure Scala port of jzlib — zlib compression for JVM, JS, Native, and WASM",
+    organization = "com.github.scala-zlib",
+    url = "https://github.com/He-Pin/scala-zlib",
+    licenses = Seq(License.`BSD-3-Clause`),
+    versionControl = VersionControl.github("He-Pin", "scala-zlib"),
+    developers = Seq(
+      Developer("He-Pin", "He-Pin", "https://github.com/He-Pin")
+    )
+  )
 
   def scalacOptions = T {
     super.scalacOptions() ++ Seq(
