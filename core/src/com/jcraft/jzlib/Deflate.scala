@@ -955,6 +955,19 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     Z_OK
   }
 
+  private[jzlib] def deflateGetDictionary(dictionary: Array[Byte], dictLength: Array[Int]): Int = {
+    if (status != INIT_STATE && status != BUSY_STATE && status != FINISH_STATE)
+      return Z_STREAM_ERROR
+    var len = strstart + lookahead
+    if (len > w_size)
+      len = w_size
+    if (dictionary != null && len != 0)
+      System.arraycopy(window, strstart + lookahead - len, dictionary, 0, len)
+    if (dictLength != null)
+      dictLength(0) = len
+    Z_OK
+  }
+
   private[jzlib] def deflate(flush: Int): Int = {
     var old_flush = 0
     if (flush > Z_FINISH || flush < 0) { return Z_STREAM_ERROR }

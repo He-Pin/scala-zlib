@@ -368,6 +368,27 @@ final class Deflater extends ZStream with AutoCloseable {
   }
 
   /**
+   * Retrieves the sliding dictionary being maintained by deflate.
+   *
+   * The dictionary content is copied into `dictionary`, and `dictLength(0)` is set to the number of bytes copied. If
+   * `dictionary` is `null`, only the length is returned via `dictLength`. If `dictLength` is `null`, it is not set.
+   *
+   * A 32768-byte buffer is always sufficient. The actual length may be less than the window size, even after more than
+   * window-size bytes of input have been provided.
+   *
+   * @param dictionary
+   *   destination buffer for the dictionary data (may be `null` to query length only)
+   * @param dictLength
+   *   single-element array; on return, `dictLength(0)` contains the dictionary length (may be `null`)
+   * @return
+   *   [[JZlib.Z_OK]] on success, or [[JZlib.Z_STREAM_ERROR]] if the deflater is not initialized
+   */
+  def getDictionary(dictionary: Array[Byte], dictLength: Array[Int]): Int = {
+    if (dstate == null) return Z_STREAM_ERROR
+    dstate.deflateGetDictionary(dictionary, dictLength)
+  }
+
+  /**
    * Returns `true` after [[deflate]] has returned [[JZlib.Z_STREAM_END]], indicating that all input has been
    * compressed.
    */
