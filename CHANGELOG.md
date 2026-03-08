@@ -21,11 +21,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Runnable Scala examples (`example/` module): `BasicCompression`, `GZIPExample`, `ChecksumExample`, `UtilityExample`
 - Cross-platform usage examples (`example/` module)
 - Release workflow for Maven Central publishing with downloadable artifacts (JAR, source, doc)
+- `JZlib.uncompress2()` — one-shot decompression that returns `UncompressResult(data, inputBytesUsed)` reporting how many input bytes were consumed
+- `Deflater.getDictionary()` / `Deflate.deflateGetDictionary()` — retrieve the current sliding window dictionary from an active deflater (from zlib 1.2.x)
+- `Inflater.getDictionary()` / `Inflate.inflateGetDictionary()` — retrieve the current dictionary from an active inflater (from madler/zlib)
+- `CRC32.combineGen()` / `CRC32.combineOp()` — optimized CRC-32 combine for repeated same-length operations (slicing-by-4 from madler/zlib)
+- `references/zlib/` — madler/zlib added as a reference git submodule alongside jzlib
 
 ### Fixed
 - Concatenated/multi-member GZIP streams now handled correctly by `GZIPInputStream`
 - Integer overflow in `compress` / `uncompress` when computing output buffer sizes
 - CI Java 25 compatibility and fail-fast behavior
+- `deflateBound()` now returns more conservative/accurate bounds matching modern zlib, handles `Z_STREAM_END` state
+- Z_FIXED block selection fix from madler/zlib 1.2.12 — correct static vs dynamic block decision
+- `CRC32.combine()` correctness fix for edge cases
+- Z_RLE strategy window bounds fix from madler/zlib
+- `deflateParams` improvements — safer mid-stream strategy/level changes
+- Input validation — null checks on buffers, state validation, negative length checks, `windowBits=8` handling
 
 ### Changed
 - Upgraded Mill from 0.12.11 to 1.1.2
@@ -35,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - CI: enhanced release workflow with artifact upload to GitHub Releases
 - CI: Java 25 now tested natively (not just bytecode compat)
 - CI: updated workflows for Mill 1.1.2
+- CRC-32 internals now use slicing-by-4 algorithm for improved performance (ported from madler/zlib)
 
 ### Documentation
 - Comprehensive Scaladoc on `ZStream` deprecated class
@@ -49,10 +61,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `GZIPMultiMemberSuite` — tests for concatenated/multi-member GZIP stream reading
 - Edge case tests for flush modes, checksums, and utilities
 - `JRubyCompatSuite` — jruby API compatibility test suite (JVM)
-- `JZlibUtilSuite` — tests for `deflateBound`, `compressBound`, `compress`, `uncompress`
+- `JZlibUtilSuite` — tests for `deflateBound`, `compressBound`, `compress`, `uncompress`, `uncompress2`
 - `StrategyConstantsSuite` — tests for `Z_RLE` and `Z_FIXED` strategy constants
 - `ErrorDescriptionSuite` — tests for `getErrorDescription` return values
 - `WrapperTypeSuite` — edge case tests for wrapper type handling
+- `DeflateGetDictionarySuite` — tests for `deflateGetDictionary` round-trip and edge cases
+- `InflateGetDictionarySuite` — tests for `inflateGetDictionary` round-trip and edge cases
+- `InputValidationSuite` — tests for null checks, negative lengths, and state validation
+- `CRC32Suite` — expanded with `combineGen`/`combineOp` and slicing-by-4 correctness tests
 - JMH benchmarks expanded to cover one-shot utility functions
 
 ## [1.1.5] - 2026-03-08
@@ -73,6 +89,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `WrapperType` implemented as sealed abstract class (was Java enum)
 - Java `switch` fall-through translated to while+match state machines
 - `do-while` replaced with `while({ body; cond })()` for Scala 3 compatibility
+
+### madler/zlib improvements ported
+- Bug fixes, new APIs, and performance improvements from madler/zlib 1.2.x–1.3.x
+- See the [Unreleased] section above for full details
 
 ### Upstream jzlib changes incorporated
 - All 65 upstream jzlib commits through 1.1.5 are incorporated

@@ -11,6 +11,7 @@ scala-zlib is a pure Scala port of [jzlib](https://github.com/jruby/jzlib), a Ja
 - **Java**: 17+ (21 recommended, 25 supported)
 - **License**: BSD-style (same as jzlib)
 - **Upstream**: https://github.com/jruby/jzlib (git submodule at `references/jzlib`)
+- **Upstream zlib**: https://github.com/madler/zlib (git submodule at `references/zlib`) — bug fixes and improvements from zlib 1.2.x–1.3.x have been ported
 
 ## Architecture
 
@@ -30,10 +31,10 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 
 | Class | Module | Description |
 |-------|--------|-------------|
-| `JZlib` | core | Constants (`Z_RLE`, `Z_FIXED`, etc.), `WrapperType` enum, `adler32_combine`, `crc32_combine`, `deflateBound`, `compressBound`, `compress`, `uncompress`, `getErrorDescription` |
+| `JZlib` | core | Constants (`Z_RLE`, `Z_FIXED`, etc.), `WrapperType` enum, `adler32_combine`, `crc32_combine`, `deflateBound`, `compressBound`, `compress`, `uncompress`, `uncompress2`, `getErrorDescription` |
 | `ZStream` | core | Low-level stream state — **deprecated**, use `Deflater`/`Inflater` |
-| `Deflater` | core | High-level compression API — `AutoCloseable`, `toString`, companion factories (`Deflater()`, `Deflater.gzip()`) |
-| `Inflater` | core | High-level decompression API — `AutoCloseable`, `toString`, companion factories (`Inflater()`, `Inflater.auto()`, `Inflater.gzip()`) |
+| `Deflater` | core | High-level compression API — `AutoCloseable`, `toString`, `getDictionary`, companion factories (`Deflater()`, `Deflater.gzip()`) |
+| `Inflater` | core | High-level decompression API — `AutoCloseable`, `toString`, `getDictionary`, companion factories (`Inflater()`, `Inflater.auto()`, `Inflater.gzip()`) |
 | `Deflate` | core | Internal deflate algorithm (not public API) |
 | `Inflate` | core | Internal inflate algorithm (not public API) |
 | `InfBlocks` | core | Inflate block decoder (internal) |
@@ -42,7 +43,7 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 | `Tree` | core | Huffman tree (internal) |
 | `StaticTree` | core | Static Huffman trees (internal) |
 | `Adler32` | core | Adler-32 checksum: `update`, `getValue`, `reset`, `copy`, `combine` |
-| `CRC32` | core | CRC-32 checksum: `update`, `getValue`, `reset`, `copy`, `combine` |
+| `CRC32` | core | CRC-32 checksum: `update`, `getValue`, `reset`, `copy`, `combine`, `combineGen`, `combineOp` (slicing-by-4) |
 | `GZIPHeader` | core | GZIP header metadata (OS, filename, comment, mtime) |
 | `GZIPException` | core | Thrown on GZIP format errors — extends `Exception`, NOT `IOException` |
 | `ZStreamException` | core | Thrown on zlib stream errors — extends `Exception`, NOT `IOException` |
@@ -98,13 +99,16 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
 ```
 
-## Upstream Project
+## Upstream Projects
 
-- **URL**: https://github.com/jruby/jzlib
-- **Submodule**: `references/jzlib` (for easy diffing against upstream)
-- This project tracks jzlib commits one-by-one.
-- Every commit in this repository records its upstream jzlib commit SHA in the `References:` section of the commit message.
-- To view an upstream commit: `https://github.com/jruby/jzlib/commit/<SHA>`
+- **jzlib URL**: https://github.com/jruby/jzlib
+- **jzlib submodule**: `references/jzlib` (for easy diffing against upstream)
+- **madler/zlib URL**: https://github.com/madler/zlib
+- **madler/zlib submodule**: `references/zlib` (for diffing against original C zlib)
+- This project tracks jzlib commits one-by-one, and selectively ports improvements from madler/zlib.
+- Every commit in this repository records its upstream commit SHA in the `References:` section of the commit message.
+- To view an upstream jzlib commit: `https://github.com/jruby/jzlib/commit/<SHA>`
+- To view an upstream zlib commit: `https://github.com/madler/zlib/commit/<SHA>`
 
 ## Important Notes for AI Assistants
 
@@ -265,11 +269,16 @@ Use `JZlib.getErrorDescription(code)` to get a human-readable error message for 
 
 | Function | Description |
 |----------|-------------|
-| `JZlib.deflateBound(sourceLen)` | Upper bound on compressed size for given input length |
+| `JZlib.deflateBound(sourceLen)` | Upper bound on compressed size for given input length (improved accuracy from madler/zlib) |
 | `JZlib.compressBound(sourceLen)` | Alias for `deflateBound` |
 | `JZlib.compress(data)` | One-shot compression (returns compressed byte array) |
 | `JZlib.uncompress(data)` | One-shot decompression (returns decompressed byte array) |
+| `JZlib.uncompress2(data)` | One-shot decompression returning `UncompressResult(data, inputBytesUsed)` |
 | `JZlib.getErrorDescription(code)` | Human-readable error message for a zlib return code |
+| `Deflater.getDictionary(dict, len)` | Retrieve the current sliding window dictionary from an active deflater |
+| `Inflater.getDictionary(dict, len)` | Retrieve the current dictionary from an active inflater |
+| `CRC32.combineGen(len2)` | Pre-compute an operator for repeated CRC-32 combine with fixed length |
+| `CRC32.combineOp(op, crc1, crc2)` | Apply a pre-computed combine operator to two CRC-32 values |
 
 ### Companion Object Factories
 
@@ -320,12 +329,15 @@ Hot-path methods in `Deflate.scala` are annotated with `@inline`:
 | Suite | Module | Description |
 |-------|--------|-------------|
 | `Adler32Suite` | core | Adler-32 checksum correctness and combine |
-| `CRC32Suite` | core | CRC-32 checksum correctness and combine |
+| `CRC32Suite` | core | CRC-32 checksum correctness, combine, `combineGen`/`combineOp`, and slicing-by-4 |
 | `CompanionObjectSuite` | core | Companion object factory methods for `Deflater` and `Inflater` |
+| `DeflateGetDictionarySuite` | core | `deflateGetDictionary` round-trip and edge cases |
 | `DeflateInflateSuite` | core | Round-trip deflate/inflate across levels, strategies, and wrapper types |
 | `ErrorDescriptionSuite` | core | `getErrorDescription` return values for all return codes |
 | `GZIPMultiMemberSuite` | core | Concatenated/multi-member GZIP stream reading |
-| `JZlibUtilSuite` | core | `deflateBound`, `compressBound`, `compress`, `uncompress` |
+| `InflateGetDictionarySuite` | core | `inflateGetDictionary` round-trip and edge cases |
+| `InputValidationSuite` | core | Null checks, negative lengths, state validation, `windowBits=8` handling |
+| `JZlibUtilSuite` | core | `deflateBound`, `compressBound`, `compress`, `uncompress`, `uncompress2` |
 | `StrategyConstantsSuite` | core | `Z_RLE` and `Z_FIXED` strategy constants |
 | `WrapperTypeSuite` | core | Wrapper type edge cases |
 | `DeflaterInflaterStreamSuite` | jvm | JVM `DeflaterOutputStream` / `InflaterInputStream` interop with `java.util.zip` |
@@ -361,6 +373,7 @@ When porting an upstream jzlib commit or adding a feature:
 | GZIP output | `core/src/com/jcraft/jzlib/GZIPOutputStream.scala` |
 | GZIP input | `core/src/com/jcraft/jzlib/GZIPInputStream.scala` |
 | Upstream jzlib source | `references/jzlib/` (git submodule) |
+| Upstream zlib (madler) source | `references/zlib/` (git submodule) |
 | Mill build definition | `build.mill` |
 | Mill version | `.mill-version` (1.1.2) |
 | Scalafmt config | `.scalafmt.conf` |

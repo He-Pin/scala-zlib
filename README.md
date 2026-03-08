@@ -33,7 +33,7 @@ scala-zlib fully implements these compression standards:
 | [RFC 1951](https://www.rfc-editor.org/rfc/rfc1951) | DEFLATE Compressed Data Format | ✅ Full |
 | [RFC 1952](https://www.rfc-editor.org/rfc/rfc1952) | GZIP File Format | ✅ Full |
 
-The implementation is based on zlib 1.1.3 algorithms via the [jzlib](https://github.com/jruby/jzlib) Java port.
+The implementation is based on zlib 1.1.3 algorithms via the [jzlib](https://github.com/jruby/jzlib) Java port, with bug fixes and improvements from [madler/zlib](https://github.com/madler/zlib) 1.2.x–1.3.x selectively ported.
 
 ## jruby Compatibility
 
@@ -58,13 +58,19 @@ scala-zlib uses the same package name (`com.jcraft.jzlib`), class names, and met
 
 All classes are available on all platforms. Stream classes extend `java.io.FilterInputStream`/`java.io.FilterOutputStream`, which are supported across JVM, Scala.js, Scala Native, and WASM. Scala Native is CI-tested on both Linux and Windows.
 
-## Upstream Project
+## Upstream Projects
 
 scala-zlib is a direct Scala port of **jzlib**, originally authored by ymnk at JCraft, Inc. and currently maintained by the JRuby team:
 
 > https://github.com/jruby/jzlib
 
 The upstream source is tracked as a git submodule at `references/jzlib`. Each commit in this repository tracks one upstream jzlib commit, with the upstream SHA recorded in the `References:` section of the commit message.
+
+Additionally, bug fixes, new APIs, and performance improvements from the original C **zlib** library by Mark Adler have been selectively ported:
+
+> https://github.com/madler/zlib
+
+The madler/zlib source is tracked as a git submodule at `references/zlib` for easy diffing.
 
 ## Features
 
@@ -261,9 +267,9 @@ def decompress(data: Array[Byte], maxLen: Int = 65536): Array[Byte] = {
 
 | Class | Description |
 |-------|-------------|
-| `JZlib` | Constants (`Z_OK`, `Z_FINISH`, …), `WrapperType` enum, `adler32_combine`, `crc32_combine` |
-| `Deflater` | High-level compression. Call `init`, `setInput`, `setOutput`, `deflate`, `end`. |
-| `Inflater` | High-level decompression. Call `init`, `setInput`, `setOutput`, `inflate`, `end`. |
+| `JZlib` | Constants (`Z_OK`, `Z_FINISH`, …), `WrapperType` enum, `adler32_combine`, `crc32_combine`, `uncompress2` |
+| `Deflater` | High-level compression. Call `init`, `setInput`, `setOutput`, `deflate`, `end`. Supports `getDictionary`. |
+| `Inflater` | High-level decompression. Call `init`, `setInput`, `setOutput`, `inflate`, `end`. Supports `getDictionary`. |
 | `Adler32` | Adler-32 checksum: `update`, `getValue`, `reset`, `copy`, `combine` |
 | `CRC32` | CRC-32 checksum: `update`, `getValue`, `reset`, `copy`, `combine` |
 | `GZIPHeader` | GZIP header metadata (OS, filename, comment, modification time) |
@@ -296,6 +302,15 @@ val buffer = new Array[Byte](maxSize.toInt)
 // One-shot compression/decompression
 val compressed = JZlib.compress(inputData)
 val decompressed = JZlib.uncompress(compressed)
+
+// One-shot decompression with input bytes consumed
+val result = JZlib.uncompress2(compressed)
+// result.data — decompressed bytes
+// result.inputBytesUsed — how many input bytes were consumed
+
+// Retrieve dictionary from an active deflater/inflater
+deflater.getDictionary(dictBuf, dictLen)
+inflater.getDictionary(dictBuf, dictLen)
 
 // Human-readable error messages
 val msg = JZlib.getErrorDescription(JZlib.Z_DATA_ERROR)
