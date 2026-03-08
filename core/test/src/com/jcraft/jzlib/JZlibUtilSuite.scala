@@ -7,15 +7,113 @@ class JZlibUtilSuite extends munit.FunSuite {
   test("deflateBound returns reasonable upper bound") {
     // For small data
     assert(deflateBound(100) >= 100)
-    // For empty data
-    assert(deflateBound(0) == 13)
+    // For empty data — must cover wrapper overhead
+    assert(deflateBound(0) > 0)
+    // For 1 byte
+    assert(deflateBound(1) > 1)
     // For 1MB
     assert(deflateBound(1024 * 1024) > 1024 * 1024)
+    // For large data (100MB)
+    assert(deflateBound(100L * 1024 * 1024) > 100L * 1024 * 1024)
   }
 
   test("compressBound equals deflateBound") {
     assertEquals(compressBound(1000), deflateBound(1000))
     assertEquals(compressBound(0), deflateBound(0))
+  }
+
+  test("compressed size within deflateBound for all levels") {
+    val sizes  = Seq(0, 1, 10, 100, 1000, 10000, 100000)
+    val levels = Seq(
+      Z_NO_COMPRESSION,
+      Z_BEST_SPEED,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      Z_BEST_COMPRESSION,
+      Z_DEFAULT_COMPRESSION,
+    )
+    for {
+      size  <- sizes
+      level <- levels
+    } {
+      val original   = Array.fill[Byte](size)((scala.util.Random.nextInt(256) - 128).toByte)
+      val compressed = {
+        val d      = new Deflater()
+        d.init(level)
+        d.setInput(original)
+        d.setNextInIndex(0)
+        d.setAvailIn(original.length)
+        val bound  = deflateBound(original.length.toLong).toInt
+        val output = new Array[Byte](bound)
+        d.setOutput(output)
+        d.setNextOutIndex(0)
+        d.setAvailOut(output.length)
+        d.deflate(Z_FINISH)
+        val len    = output.length - d.getAvailOut
+        d.end()
+        val result = new Array[Byte](len)
+        System.arraycopy(output, 0, result, 0, len)
+        result
+      }
+      assert(
+        compressed.length <= deflateBound(original.length.toLong),
+        s"level=$level size=$size: compressed=${compressed.length} > bound=${deflateBound(original.length.toLong)}",
+      )
+    }
+  }
+
+  test("deflateBound with level 0 (stored blocks)") {
+    // Level 0 uses stored blocks which expand the data slightly;
+    // deflateBound must cover this expansion
+    val sizes = Seq(0, 1, 127, 128, 255, 256, 1000, 65535, 100000)
+    for (size <- sizes) {
+      val original   = Array.fill[Byte](size)((scala.util.Random.nextInt(256) - 128).toByte)
+      val compressed = {
+        val d      = new Deflater()
+        d.init(Z_NO_COMPRESSION)
+        d.setInput(original)
+        d.setNextInIndex(0)
+        d.setAvailIn(original.length)
+        val bound  = deflateBound(original.length.toLong).toInt
+        val output = new Array[Byte](bound)
+        d.setOutput(output)
+        d.setNextOutIndex(0)
+        d.setAvailOut(output.length)
+        d.deflate(Z_FINISH)
+        val len    = output.length - d.getAvailOut
+        d.end()
+        len
+      }
+      assert(
+        compressed <= deflateBound(original.length.toLong),
+        s"level=0 size=$size: compressed=$compressed > bound=${deflateBound(original.length.toLong)}",
+      )
+    }
+  }
+
+  test("Deflater.deflateBound returns tighter bound with default settings") {
+    val d             = Deflater()
+    // Instance bound for default settings should be <= static bound
+    val sourceLen     = 100000L
+    val instanceBound = d.deflateBound(sourceLen)
+    val staticBound   = deflateBound(sourceLen)
+    assert(
+      instanceBound <= staticBound,
+      s"instance=$instanceBound should be <= static=$staticBound",
+    )
+    assert(instanceBound > sourceLen, s"instance=$instanceBound should be > sourceLen=$sourceLen")
+    d.end()
+  }
+
+  test("Deflater.deflateBound falls back to static bound when not initialized") {
+    val d = new Deflater()
+    d.end()
+    assertEquals(d.deflateBound(1000L), deflateBound(1000L))
   }
 
   test("compress and uncompress round-trip") {

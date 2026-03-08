@@ -244,7 +244,10 @@ final class Deflater extends ZStream with AutoCloseable {
    *   [[JZlib.Z_OK]] on success, or [[JZlib.Z_STREAM_ERROR]] on invalid parameters
    */
   def init(level: Int, bits: Int, memlevel: Int, wrapperType: JZlib.WrapperType): Int = {
-    if (bits < 9 || bits > 15) {
+    if (bits < 8 || bits > 15) {
+      return Z_STREAM_ERROR
+    }
+    if (bits == 8 && wrapperType != JZlib.W_ZLIB) {
       return Z_STREAM_ERROR
     }
     val adjustedBits =
@@ -305,6 +308,7 @@ final class Deflater extends ZStream with AutoCloseable {
    */
   override def deflate(flush: Int): Int = {
     if (dstate == null) {
+      msg = "deflate: not initialized — call init() before deflate()"
       return Z_STREAM_ERROR
     }
     val ret = dstate.deflate(flush)
@@ -324,7 +328,10 @@ final class Deflater extends ZStream with AutoCloseable {
    */
   override def end(): Int = {
     _finished = true
-    if (dstate == null) return Z_STREAM_ERROR
+    if (dstate == null) {
+      msg = "deflate end: not initialized"
+      return Z_STREAM_ERROR
+    }
     val ret = dstate.deflateEnd()
     dstate = null
     free()
@@ -344,7 +351,10 @@ final class Deflater extends ZStream with AutoCloseable {
    *   [[JZlib.Z_OK]] on success
    */
   def params(level: Int, strategy: Int): Int = {
-    if (dstate == null) return Z_STREAM_ERROR
+    if (dstate == null) {
+      msg = "deflateParams: not initialized"
+      return Z_STREAM_ERROR
+    }
     dstate.deflateParams(level, strategy)
   }
 
@@ -362,8 +372,10 @@ final class Deflater extends ZStream with AutoCloseable {
    *   [[JZlib.Z_OK]] on success
    */
   def setDictionary(dictionary: Array[Byte], dictLength: Int): Int = {
-    if (dstate == null)
+    if (dstate == null) {
+      msg = "deflateSetDictionary: not initialized"
       return Z_STREAM_ERROR
+    }
     dstate.deflateSetDictionary(dictionary, dictLength)
   }
 
@@ -393,6 +405,23 @@ final class Deflater extends ZStream with AutoCloseable {
    * compressed.
    */
   override def finished(): Boolean = _finished
+
+  /**
+   * Returns an upper bound on the compressed size for the given uncompressed length, taking into account this
+   * deflater's compression parameters (level, window bits, memory level, wrapper type).
+   *
+   * When the deflater has been initialized, this returns a tighter bound than the static [[JZlib.deflateBound]]. If the
+   * deflater has not been initialized (or has been ended), falls back to the conservative static bound.
+   *
+   * @param sourceLen
+   *   the length of uncompressed data
+   * @return
+   *   upper bound on compressed size for this deflater's settings
+   */
+  def deflateBound(sourceLen: Long): Long = {
+    if (dstate == null) JZlib.deflateBound(sourceLen)
+    else dstate.deflateBound(sourceLen)
+  }
 
   /**
    * Copies the compression state from another `Deflater` into this one.

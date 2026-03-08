@@ -861,10 +861,12 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     if (wb < 0) { wrap = 0; wb = -wb }
     else if (wb > 15) { wrap = 2; wb -= 16; strm.adler = new CRC32() }
     if (memLevel < 1 || memLevel > MAX_MEM_LEVEL || method != Z_DEFLATED ||
-        wb < 9 || wb > 15 || lvl < 0 || lvl > 9 ||
-        strategy < 0 || strategy > Z_HUFFMAN_ONLY) {
+        wb < 8 || wb > 15 || lvl < 0 || lvl > 9 ||
+        strategy < 0 || strategy > Z_HUFFMAN_ONLY ||
+        (wb == 8 && wrap != 1)) {
       return Z_STREAM_ERROR
     }
+    if (wb == 8) wb = 9 // upgrade 256-byte window to 512 (zlib wrapper signals this)
     strm.dstate       = this
     this.wrap         = wrap
     w_bits            = wb
@@ -902,6 +904,49 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     tr_init()
     lm_init()
     Z_OK
+  }
+
+  private[jzlib] def deflateBound(sourceLen: Long): Long = {
+    // upper bound for fixed blocks with 9-bit literals and length 255
+    // (memLevel == 2, lowest that may not use stored blocks) -- ~13% overhead
+    val fixedlen = sourceLen + (sourceLen >> 3) + (sourceLen >> 8) +
+      (sourceLen >> 9) + 4
+
+    // upper bound for stored blocks with length 127 (memLevel == 1) -- ~4% overhead
+    val storelen = sourceLen + (sourceLen >> 5) + (sourceLen >> 7) +
+      (sourceLen >> 11) + 7
+
+    // compute wrapper length; use |wrap| to handle negative wrap after Z_STREAM_END
+    val wrapAbs = if (wrap < 0) -wrap else wrap
+    val wraplen: Long = wrapAbs match {
+      case 0 => 0L // raw deflate
+      case 1 =>    // zlib wrapper
+        6L + (if (strstart != 0) 4L else 0L)
+      case 2 => // gzip wrapper
+        var wl = 18L
+        if (gheader != null) {
+          if (gheader.extra != null)
+            wl += 2L + gheader.extra.length
+          if (gheader.name != null)
+            wl += gheader.name.length + 1L
+          if (gheader.comment != null)
+            wl += gheader.comment.length + 1L
+          if (gheader.hcrc != 0)
+            wl += 2L
+        }
+        wl
+      case _ => 18L
+    }
+
+    // if not default parameters, return one of the conservative bounds
+    if (w_bits != 15 || hash_bits != 8 + 7) {
+      // level 0 always uses stored blocks, even when w_bits <= hash_bits
+      (if (w_bits <= hash_bits && level != 0) fixedlen else storelen) + wraplen
+    } else {
+      // default settings: return tight bound -- ~0.03% overhead plus a small constant
+      sourceLen + (sourceLen >> 12) + (sourceLen >> 14) +
+        (sourceLen >> 25) + 13 - 6 + wraplen
+    }
   }
 
   private[jzlib] def deflateEnd(): Int = {

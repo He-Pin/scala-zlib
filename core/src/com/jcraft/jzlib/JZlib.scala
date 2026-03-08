@@ -239,18 +239,33 @@ object JZlib {
   }
 
   /**
-   * Returns an upper bound on the compressed size for the given uncompressed length. This is useful for pre-allocating
-   * output buffers.
+   * Returns a conservative upper bound on the compressed size for the given uncompressed length. This is useful for
+   * pre-allocating output buffers when no [[Deflater]] state is available.
    *
-   * The formula matches the C zlib implementation.
+   * Since this method has no access to deflater parameters, it returns the worst-case bound that is safe for any
+   * combination of compression level, window bits, memory level, and wrapper type. The formula matches modern C zlib's
+   * `deflateBound()` when called without a valid stream.
+   *
+   * For a tighter bound when a [[Deflater]] has been initialized, use [[Deflater.deflateBound]] instead.
    *
    * @param sourceLen
    *   the length of uncompressed data
    * @return
    *   upper bound on compressed size
    */
-  def deflateBound(sourceLen: Long): Long =
-    sourceLen + (sourceLen >> 12) + (sourceLen >> 14) + (sourceLen >> 25) + 13
+  def deflateBound(sourceLen: Long): Long = {
+    // upper bound for fixed blocks with 9-bit literals and length 255
+    // (memLevel == 2, lowest that may not use stored blocks) -- ~13% overhead
+    val fixedlen = sourceLen + (sourceLen >> 3) + (sourceLen >> 8) +
+      (sourceLen >> 9) + 4
+
+    // upper bound for stored blocks with length 127 (memLevel == 1) -- ~4% overhead
+    val storelen = sourceLen + (sourceLen >> 5) + (sourceLen >> 7) +
+      (sourceLen >> 11) + 7
+
+    // without stream state, use larger bound plus maximum wrapper (GZIP = 18 bytes)
+    (if (fixedlen > storelen) fixedlen else storelen) + 18
+  }
 
   /**
    * Equivalent to [[deflateBound]] — returns an upper bound on compressed size. Matches the C zlib `compressBound()`
@@ -269,6 +284,8 @@ object JZlib {
    *   if compression fails
    */
   def compress(data: Array[Byte]): Array[Byte] = {
+    if (data == null)
+      throw new ZStreamException("compress: null input data")
     val deflater = new Deflater()
     deflater.init(Z_DEFAULT_COMPRESSION)
 
@@ -312,6 +329,8 @@ object JZlib {
    *   if decompression fails
    */
   def uncompress(data: Array[Byte]): Array[Byte] = {
+    if (data == null)
+      throw new ZStreamException("uncompress: null input data")
     val inflater = new Inflater()
     inflater.init()
 
@@ -374,6 +393,8 @@ object JZlib {
    *   if decompression fails
    */
   def uncompress2(data: Array[Byte]): UncompressResult = {
+    if (data == null)
+      throw new ZStreamException("uncompress2: null input data")
     val inflater = new Inflater()
     inflater.init()
 
