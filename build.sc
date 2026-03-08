@@ -41,9 +41,7 @@ trait ZlibModule extends ScalaModule with ScalafmtModule with PublishModule {
   }
 }
 
-/** Cross-platform core algorithm module — runs on JVM, JS, Native, and WASM.
-  * No java.io dependencies; pure byte-array algorithm only.
-  */
+/** Cross-platform zlib module — algorithms and stream wrappers for JVM, JS, Native, and WASM. */
 trait CoreModule extends ZlibModule {
   def artifactName = "scala-zlib-core"
 
@@ -52,10 +50,8 @@ trait CoreModule extends ZlibModule {
   }
 }
 
-/** JVM-only stream-wrapper module — extends java.io FilterStream classes. */
-trait JvmStreamsModule extends ZlibModule {
-  def artifactName = "scala-zlib-jvm"
-
+/** JVM-only interop tests — verifies compatibility with java.util.zip. */
+trait JvmStreamsModule extends ScalaModule with ScalafmtModule {
   trait JvmTests extends ScalaTests with TestModule.Munit {
     def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
   }
