@@ -5,6 +5,22 @@ This project is a Scala port of [jzlib](https://github.com/jruby/jzlib).
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- Cross-platform stream classes — all stream wrappers now available on JVM, Scala.js, Scala Native, and WASM
+- `JZlib.deflateBound()` / `compressBound()` — upper bound on compressed size
+- `JZlib.compress()` / `uncompress()` — one-shot compression utilities
+- `JZlib.getErrorDescription()` — human-readable error messages
+- JMH benchmark suite expanded to 30 methods (100% API coverage)
+- jruby API compatibility test suite
+- Java 25 support via Mill 1.1.2
+
+### Changed
+- Upgraded Mill from 0.12.11 to 1.1.2
+- Build file renamed from `build.sc` to `build.mill`
+- CI: Java 25 now tested natively (not just bytecode compat)
+
 ## [1.1.5] - 2026-03-08
 
 ### Added

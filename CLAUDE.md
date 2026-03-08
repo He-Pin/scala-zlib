@@ -6,9 +6,9 @@ scala-zlib is a pure Scala port of [jzlib](https://github.com/jruby/jzlib), a Ja
 
 - **Package**: `com.jcraft.jzlib`
 - **Scala versions**: 2.13.16 and 3.3.7
-- **Build tool**: Mill 0.12.11 (pinned in `.mill-version`)
+- **Build tool**: Mill 1.1.2 (pinned in `.mill-version`)
 - **Test framework**: munit (cross-platform)
-- **Java**: 17+ (21 recommended)
+- **Java**: 17+ (21 recommended, 25 supported)
 - **License**: BSD-style (same as jzlib)
 - **Upstream**: https://github.com/jruby/jzlib (git submodule at `references/jzlib`)
 
@@ -30,7 +30,7 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 
 | Class | Module | Description |
 |-------|--------|-------------|
-| `JZlib` | core | Constants, `WrapperType` enum, `adler32_combine`, `crc32_combine` |
+| `JZlib` | core | Constants, `WrapperType` enum, `adler32_combine`, `crc32_combine`, `deflateBound`, `compressBound`, `compress`, `uncompress`, `getErrorDescription` |
 | `ZStream` | core | Low-level stream state — **deprecated**, use `Deflater`/`Inflater` |
 | `Deflater` | core | High-level compression API |
 | `Inflater` | core | High-level decompression API |
@@ -53,7 +53,7 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 | `ZOutputStream` | core | Legacy compressing stream — **deprecated** |
 | `ZInputStream` | core | Legacy decompressing stream — **deprecated** |
 
-## Build System: Mill 0.12.11
+## Build System: Mill 1.1.2
 
 ### Mill Modules
 
@@ -259,6 +259,18 @@ inflater.init(15 + 32)                          // 15+32 = auto-detect ZLIB or G
 | `Z_BUF_ERROR` | -5 | No progress possible |
 | `Z_VERSION_ERROR` | -6 | Version mismatch |
 
+Use `JZlib.getErrorDescription(code)` to get a human-readable error message for any return code.
+
+### Utility Functions
+
+| Function | Description |
+|----------|-------------|
+| `JZlib.deflateBound(sourceLen)` | Upper bound on compressed size for given input length |
+| `JZlib.compressBound(sourceLen)` | Alias for `deflateBound` |
+| `JZlib.compress(data)` | One-shot compression (returns compressed byte array) |
+| `JZlib.uncompress(data)` | One-shot decompression (returns decompressed byte array) |
+| `JZlib.getErrorDescription(code)` | Human-readable error message for a zlib return code |
+
 ## Development Workflow
 
 When porting an upstream jzlib commit or adding a feature:
@@ -288,6 +300,6 @@ When porting an upstream jzlib commit or adding a feature:
 | GZIP input | `core/src/com/jcraft/jzlib/GZIPInputStream.scala` |
 | Upstream jzlib source | `references/jzlib/` (git submodule) |
 | Mill build definition | `build.mill` |
-| Mill version | `.mill-version` (0.12.11) |
+| Mill version | `.mill-version` (1.1.2) |
 | Scalafmt config | `.scalafmt.conf` |
 | CI workflow | `.github/workflows/ci.yml` |

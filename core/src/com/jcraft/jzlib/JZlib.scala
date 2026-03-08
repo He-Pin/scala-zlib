@@ -237,6 +237,116 @@ object JZlib {
     case Z_VERSION_ERROR => "Version error: zlib library version mismatch"
     case _               => s"Unknown error code: $code"
   }
+
+  /**
+   * Returns an upper bound on the compressed size for the given uncompressed length. This is useful for pre-allocating
+   * output buffers.
+   *
+   * The formula matches the C zlib implementation.
+   *
+   * @param sourceLen
+   *   the length of uncompressed data
+   * @return
+   *   upper bound on compressed size
+   */
+  def deflateBound(sourceLen: Long): Long =
+    sourceLen + (sourceLen >> 12) + (sourceLen >> 14) + (sourceLen >> 25) + 13
+
+  /**
+   * Equivalent to [[deflateBound]] — returns an upper bound on compressed size. Matches the C zlib `compressBound()`
+   * function.
+   */
+  def compressBound(sourceLen: Long): Long = deflateBound(sourceLen)
+
+  /**
+   * One-shot compression using default settings ([[Z_DEFAULT_COMPRESSION]], [[W_ZLIB]]).
+   *
+   * @param data
+   *   the uncompressed data
+   * @return
+   *   compressed data as a byte array
+   * @throws ZStreamException
+   *   if compression fails
+   */
+  def compress(data: Array[Byte]): Array[Byte] = {
+    val deflater = new Deflater()
+    deflater.init(Z_DEFAULT_COMPRESSION)
+
+    deflater.setInput(data)
+    deflater.setNextInIndex(0)
+    deflater.setAvailIn(data.length)
+
+    val bound  = deflateBound(data.length.toLong).toInt
+    val output = new Array[Byte](bound)
+    deflater.setOutput(output)
+    deflater.setNextOutIndex(0)
+    deflater.setAvailOut(output.length)
+
+    val err = deflater.deflate(Z_FINISH)
+    if (err != Z_STREAM_END) {
+      deflater.end()
+      throw new ZStreamException(s"compress failed: ${deflater.getMessage}")
+    }
+
+    val compressedLen = output.length - deflater.getAvailOut
+    deflater.end()
+
+    val result = new Array[Byte](compressedLen)
+    System.arraycopy(output, 0, result, 0, compressedLen)
+    result
+  }
+
+  /**
+   * One-shot decompression.
+   *
+   * @param data
+   *   the compressed data (zlib format)
+   * @return
+   *   decompressed data as a byte array
+   * @throws ZStreamException
+   *   if decompression fails
+   */
+  def uncompress(data: Array[Byte]): Array[Byte] = {
+    val inflater = new Inflater()
+    inflater.init()
+
+    inflater.setInput(data)
+    inflater.setNextInIndex(0)
+    inflater.setAvailIn(data.length)
+
+    var output   = new Array[Byte](math.max(data.length * 2, 64))
+    var totalOut = 0
+    val buf      = new Array[Byte](8192)
+
+    var err = Z_OK
+    while (err != Z_STREAM_END) {
+      inflater.setOutput(buf)
+      inflater.setNextOutIndex(0)
+      inflater.setAvailOut(buf.length)
+
+      err = inflater.inflate(Z_NO_FLUSH)
+      if (err != Z_OK && err != Z_STREAM_END) {
+        inflater.end()
+        throw new ZStreamException(s"uncompress failed: ${inflater.getMessage}")
+      }
+
+      val produced = buf.length - inflater.getAvailOut
+      if (produced > 0) {
+        while (totalOut + produced > output.length) {
+          val grown = new Array[Byte](output.length * 2)
+          System.arraycopy(output, 0, grown, 0, totalOut)
+          output = grown
+        }
+        System.arraycopy(buf, 0, output, totalOut, produced)
+        totalOut += produced
+      }
+    }
+
+    inflater.end()
+    val result = new Array[Byte](totalOut)
+    System.arraycopy(output, 0, result, 0, totalOut)
+    result
+  }
 }
 
 // Kept for source compatibility – the companion object holds the real API.
