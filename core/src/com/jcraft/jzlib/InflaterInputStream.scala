@@ -81,7 +81,7 @@ class InflaterInputStream(in: InputStream,
 
   private var closed: Boolean = false
 
-  private var eof: Boolean = false
+  private[jzlib] var eof: Boolean = false
 
   protected var myinflater: Boolean = false
 

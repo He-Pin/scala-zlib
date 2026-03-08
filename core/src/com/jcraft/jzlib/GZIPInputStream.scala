@@ -129,6 +129,75 @@ class GZIPInputStream(in: InputStream,
     inflater.istate.getGZIPHeader.getCRC
   }
 
+  /** Reads decompressed bytes, transparently continuing across concatenated
+    * GZIP members as required by RFC 1952 §2.2.
+    */
+  override def read(b: Array[Byte], off: Int, len: Int): Int = {
+    val n = super.read(b, off, len)
+    if (n > 0) return n
+    // End of current member — check for another GZIP member
+    if (eof && startNextMember()) return read(b, off, len)
+    -1
+  }
+
+  /** Attempts to start decompressing the next GZIP member.
+    *
+    * Saves any unconsumed input from the inflater, checks for a valid
+    * GZIP magic header, re-initialises the inflater, and parses the
+    * new member header.
+    *
+    * @return `true` if a new member was found and initialised
+    */
+  private def startNextMember(): Boolean = {
+    // Save any remaining input from the current inflater
+    val savedLen = inflater.avail_in
+    val saved = if (savedLen > 0) {
+      val tmp = new Array[Byte](savedLen)
+      System.arraycopy(inflater.next_in, inflater.next_in_index, tmp, 0, savedLen)
+      tmp
+    } else {
+      new Array[Byte](0)
+    }
+
+    // We need at least 10 bytes for the fixed GZIP header
+    val headerBuf = new Array[Byte](Math.max(saved.length, 10))
+    System.arraycopy(saved, 0, headerBuf, 0, saved.length)
+    var headerLen = saved.length
+    while (headerLen < 10) {
+      try {
+        val r = in.read(headerBuf, headerLen, 10 - headerLen)
+        if (r == -1) return false
+        headerLen += r
+      } catch {
+        case _: IOException => return false
+      }
+    }
+
+    // Check for GZIP magic bytes (ID1=0x1f, ID2=0x8b)
+    if ((headerBuf(0) & 0xff) != 0x1f || (headerBuf(1) & 0xff) != 0x8b) return false
+
+    // Re-initialise inflater for the next member
+    inflater.init(15 + 16)
+    eof = false
+
+    // Feed the header data to the inflater and parse it
+    val empty = Array.empty[Byte]
+    inflater.setOutput(empty, 0, 0)
+    inflater.setInput(headerBuf, 0, headerLen, false)
+
+    val b1 = new Array[Byte](1)
+    do {
+      if (inflater.avail_in <= 0) {
+        val i = in.read(b1)
+        if (i <= 0) return false
+        inflater.setInput(b1, 0, 1, true)
+      }
+      val err = inflater.inflate(Z_NO_FLUSH)
+      if (err != 0) return false
+    } while (inflater.istate.inParsingHeader())
+    true
+  }
+
   override def readHeader(): Unit = {
     val empty = "".getBytes()
     inflater.setOutput(empty, 0, 0)
