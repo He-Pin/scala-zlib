@@ -75,7 +75,7 @@ package com.jcraft.jzlib
 object JZlib {
 
   /** Returns the library version string. */
-  private val _version  = "1.1.0"
+  private val _version  = "1.1.5"
   def version(): String = _version
 
   /** Maximum window size in bits (32K LZ77 window). */
