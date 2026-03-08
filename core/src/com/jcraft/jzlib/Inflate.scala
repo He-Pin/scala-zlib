@@ -99,6 +99,7 @@ private[jzlib] final class Inflate(private val z: ZStream) {
   var wrap: Int         = 0
   var wbits: Int        = 0
   var blocks: InfBlocks = null
+  private var dictSize: Int = 0
 
   private var flags: Int          = 0
   private var need_bytes: Int     = -1
@@ -117,6 +118,7 @@ private[jzlib] final class Inflate(private val z: ZStream) {
     z.msg = null
     this.mode = HEAD
     this.need_bytes = -1
+    this.dictSize = 0
     this.blocks.reset()
     Z_OK
   }
@@ -548,7 +550,27 @@ private[jzlib] final class Inflate(private val z: ZStream) {
       index = dictLength - length
     }
     this.blocks.set_dictionary(dictionary, index, length)
+    this.dictSize = length
     this.mode = BLOCKS
+    Z_OK
+  }
+
+  def inflateGetDictionary(
+      dictionary: Array[Byte],
+      dictLength: Array[Int],
+  ): Int = {
+    if (z == null) return Z_STREAM_ERROR
+    if (blocks == null || blocks.window == null) return Z_STREAM_ERROR
+    val whave =
+      math.min(z.total_out + dictSize.toLong, blocks.end.toLong).toInt
+    if (whave > 0 && dictionary != null) {
+      val wnext = blocks.write
+      System.arraycopy(blocks.window, wnext, dictionary, 0, whave - wnext)
+      if (wnext > 0)
+        System.arraycopy(blocks.window, 0, dictionary, whave - wnext, wnext)
+    }
+    if (dictLength != null)
+      dictLength(0) = whave
     Z_OK
   }
 
