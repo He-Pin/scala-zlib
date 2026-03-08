@@ -267,12 +267,12 @@ def decompress(data: Array[Byte], maxLen: Int = 65536): Array[Byte] = {
 
 | Class | Description |
 |-------|-------------|
-| `JZlib` | Constants (`Z_OK`, `Z_FINISH`, …), `WrapperType` enum, `adler32_combine`, `crc32_combine`, `uncompress2` |
+| `JZlib` | Constants (`Z_OK`, `Z_FINISH`, …), `WrapperType` enum, `adler32_combine`, `crc32_combine`, `uncompress2`, `gzip`, `gunzip` |
 | `Deflater` | High-level compression. Call `init`, `setInput`, `setOutput`, `deflate`, `end`. Supports `getDictionary`. |
 | `Inflater` | High-level decompression. Call `init`, `setInput`, `setOutput`, `inflate`, `end`. Supports `getDictionary`. |
 | `Adler32` | Adler-32 checksum: `update`, `getValue`, `reset`, `copy`, `combine` |
 | `CRC32` | CRC-32 checksum: `update`, `getValue`, `reset`, `copy`, `combine` |
-| `GZIPHeader` | GZIP header metadata (OS, filename, comment, modification time) |
+| `GZIPHeader` | GZIP header metadata (OS, filename, comment, modification time); `setOSAuto()` for OS auto-detection |
 | `GZIPException` | Thrown on GZIP format errors (extends `Exception`) |
 | `ZStreamException` | Thrown on zlib stream errors (extends `Exception`) |
 | `ZStream` | Low-level stream state — **deprecated**, use `Deflater`/`Inflater` instead |
@@ -303,10 +303,17 @@ val buffer = new Array[Byte](maxSize.toInt)
 val compressed = JZlib.compress(inputData)
 val decompressed = JZlib.uncompress(compressed)
 
+// One-shot GZIP compression/decompression
+val gzipped = JZlib.gzip(inputData)
+val ungzipped = JZlib.gunzip(gzipped)
+
 // One-shot decompression with input bytes consumed
 val result = JZlib.uncompress2(compressed)
 // result.data — decompressed bytes
 // result.inputBytesUsed — how many input bytes were consumed
+
+// Tighter compressed-size bound with specific level
+val tightBound = JZlib.compressBound(inputData.length, JZlib.Z_BEST_COMPRESSION)
 
 // Retrieve dictionary from an active deflater/inflater
 deflater.getDictionary(dictBuf, dictLen)
@@ -315,6 +322,10 @@ inflater.getDictionary(dictBuf, dictLen)
 // Human-readable error messages
 val msg = JZlib.getErrorDescription(JZlib.Z_DATA_ERROR)
 // => "invalid or incomplete deflate data"
+
+// Auto-detect OS for GZIP headers
+val header = new GZIPHeader()
+header.setOSAuto()  // sets OS field from system properties
 ```
 
 ### `JZlib.WrapperType`

@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `JZlib.version()` now returns `"1.1.5"` — synced with upstream jzlib version
+- `GZIPHeader.setOSAuto()` — auto-detects OS from system properties; `GZIPHeader` companion object with `detectOS()` factory method
+- `JZlib.gzip()` / `JZlib.gunzip()` — one-shot GZIP compression and decompression utilities
+- `JZlib.compressBound(sourceLen, level)` — overload accepting compression level for tighter bounds
+- `Adler32.update(b: Int)` / `CRC32.update(b: Int)` — allocation-free single-byte checksum update
+- Scaladoc on `Adler32` and `CRC32` — all public methods documented
+- Scaladoc on stream constructors — `DeflaterOutputStream`, `InflaterInputStream`, `GZIPOutputStream` constructors documented
+- Defensive input validation — null/bounds checks on `setInput`, `setOutput`, `setDictionary`
 - Cross-platform stream classes — all stream wrappers now available on JVM, Scala.js, Scala Native, and WASM
 - `AutoCloseable` on `Deflater` and `Inflater` — enables `scala.util.Using` and try-with-resources
 - Companion object factories: `Deflater()`, `Deflater(level)`, `Deflater(level, wrapperType)`, `Deflater.gzip()`, `Inflater()`, `Inflater(wrapperType)`, `Inflater.gzip()`, `Inflater.auto()`
@@ -46,7 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - CI: enhanced release workflow with artifact upload to GitHub Releases
 - CI: Java 25 now tested natively (not just bytecode compat)
 - CI: updated workflows for Mill 1.1.2
-- CRC-32 internals now use slicing-by-4 algorithm for improved performance (ported from madler/zlib)
+- CRC-32 internals upgraded from slicing-by-4 to slicing-by-8 algorithm for higher throughput (ported from madler/zlib)
 
 ### Documentation
 - Comprehensive Scaladoc on `ZStream` deprecated class
@@ -57,6 +65,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Platform support documentation updated for cross-platform stream classes
 
 ### Testing
+- `StreamEdgeCaseSuite` — 7 tests for stream edge cases (close idempotency, empty input, syncFlush, etc.)
+- WASM CI verified — confirmed WASM test job is properly configured and passing
 - `CompanionObjectSuite` — tests for `Deflater`/`Inflater` companion object factories
 - `GZIPMultiMemberSuite` — tests for concatenated/multi-member GZIP stream reading
 - Edge case tests for flush modes, checksums, and utilities
@@ -68,7 +78,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `DeflateGetDictionarySuite` — tests for `deflateGetDictionary` round-trip and edge cases
 - `InflateGetDictionarySuite` — tests for `inflateGetDictionary` round-trip and edge cases
 - `InputValidationSuite` — tests for null checks, negative lengths, and state validation
-- `CRC32Suite` — expanded with `combineGen`/`combineOp` and slicing-by-4 correctness tests
+- `CRC32Suite` — expanded with `combineGen`/`combineOp` and slicing-by-8 correctness tests
 - JMH benchmarks expanded to cover one-shot utility functions
 
 ## [1.1.5] - 2026-03-08

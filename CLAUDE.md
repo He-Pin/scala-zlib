@@ -42,9 +42,9 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 | `InfTree` | core | Inflate Huffman tree builder (internal) |
 | `Tree` | core | Huffman tree (internal) |
 | `StaticTree` | core | Static Huffman trees (internal) |
-| `Adler32` | core | Adler-32 checksum: `update`, `getValue`, `reset`, `copy`, `combine` |
-| `CRC32` | core | CRC-32 checksum: `update`, `getValue`, `reset`, `copy`, `combine`, `combineGen`, `combineOp` (slicing-by-4) |
-| `GZIPHeader` | core | GZIP header metadata (OS, filename, comment, mtime) |
+| `Adler32` | core | Adler-32 checksum: `update`, `update(b: Int)`, `getValue`, `reset`, `copy`, `combine` |
+| `CRC32` | core | CRC-32 checksum: `update`, `update(b: Int)`, `getValue`, `reset`, `copy`, `combine`, `combineGen`, `combineOp` (slicing-by-8) |
+| `GZIPHeader` | core | GZIP header metadata (OS, filename, comment, mtime); companion object with `detectOS()` for OS auto-detection |
 | `GZIPException` | core | Thrown on GZIP format errors — extends `Exception`, NOT `IOException` |
 | `ZStreamException` | core | Thrown on zlib stream errors — extends `Exception`, NOT `IOException` |
 | `DeflaterOutputStream` | core | Compressing `FilterOutputStream` |
@@ -273,6 +273,9 @@ Use `JZlib.getErrorDescription(code)` to get a human-readable error message for 
 | `JZlib.compressBound(sourceLen)` | Alias for `deflateBound` |
 | `JZlib.compress(data)` | One-shot compression (returns compressed byte array) |
 | `JZlib.uncompress(data)` | One-shot decompression (returns decompressed byte array) |
+| `JZlib.gzip(data)` | One-shot GZIP compression (returns GZIP-wrapped byte array) |
+| `JZlib.gunzip(data)` | One-shot GZIP decompression (returns decompressed byte array) |
+| `JZlib.compressBound(sourceLen, level)` | Upper bound on compressed size for given input length and compression level |
 | `JZlib.uncompress2(data)` | One-shot decompression returning `UncompressResult(data, inputBytesUsed)` |
 | `JZlib.getErrorDescription(code)` | Human-readable error message for a zlib return code |
 | `Deflater.getDictionary(dict, len)` | Retrieve the current sliding window dictionary from an active deflater |
@@ -329,7 +332,7 @@ Hot-path methods in `Deflate.scala` are annotated with `@inline`:
 | Suite | Module | Description |
 |-------|--------|-------------|
 | `Adler32Suite` | core | Adler-32 checksum correctness and combine |
-| `CRC32Suite` | core | CRC-32 checksum correctness, combine, `combineGen`/`combineOp`, and slicing-by-4 |
+| `CRC32Suite` | core | CRC-32 checksum correctness, combine, `combineGen`/`combineOp`, and slicing-by-8 |
 | `CompanionObjectSuite` | core | Companion object factory methods for `Deflater` and `Inflater` |
 | `DeflateGetDictionarySuite` | core | `deflateGetDictionary` round-trip and edge cases |
 | `DeflateInflateSuite` | core | Round-trip deflate/inflate across levels, strategies, and wrapper types |
@@ -339,6 +342,7 @@ Hot-path methods in `Deflate.scala` are annotated with `@inline`:
 | `InputValidationSuite` | core | Null checks, negative lengths, state validation, `windowBits=8` handling |
 | `JZlibUtilSuite` | core | `deflateBound`, `compressBound`, `compress`, `uncompress`, `uncompress2` |
 | `StrategyConstantsSuite` | core | `Z_RLE` and `Z_FIXED` strategy constants |
+| `StreamEdgeCaseSuite` | core | Stream edge cases — close idempotency, empty input, syncFlush, and more (7 tests) |
 | `WrapperTypeSuite` | core | Wrapper type edge cases |
 | `DeflaterInflaterStreamSuite` | jvm | JVM `DeflaterOutputStream` / `InflaterInputStream` interop with `java.util.zip` |
 | `GZIPIOStreamSuite` | jvm | JVM GZIP stream interop with `java.util.zip` |
