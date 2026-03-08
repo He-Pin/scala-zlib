@@ -1,16 +1,18 @@
-import $ivy.`com.lihaoyi::mill-contrib-jmh:0.12.11`
+//| mvnDeps:
+//| - com.lihaoyi::mill-contrib-jmh:$MILL_VERSION
+
+package build
 
 import mill._
-import mill.scalalib._
-import mill.scalajslib._
-import mill.scalajslib.api._
-import mill.scalanativelib._
-import mill.scalalib.scalafmt.ScalafmtModule
-import mill.scalalib.publish._
-import mill.contrib.jmh.JmhModule
+import scalalib._
+import scalajslib._
+import scalajslib.api._
+import scalanativelib._
+import scalafmt.ScalafmtModule
+import publish._
+import contrib.jmh.JmhModule
 
 val scalaVersions = Seq("2.13.16", "3.3.7")
-val munitVersion  = "1.0.3"
 
 /** Shared compiler options and formatting for all modules. */
 trait ZlibModule extends ScalaModule with ScalafmtModule with PublishModule {
@@ -27,7 +29,7 @@ trait ZlibModule extends ScalaModule with ScalafmtModule with PublishModule {
     )
   )
 
-  def scalacOptions = T {
+  def scalacOptions = Task {
     super.scalacOptions() ++ Seq(
       "-deprecation",
       "-encoding",
@@ -46,14 +48,14 @@ trait CoreModule extends ZlibModule {
   def artifactName = "scala-zlib-core"
 
   trait CoreTests extends ScalaTests with TestModule.Munit {
-    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    def mvnDeps = Seq(mvn"org.scalameta::munit::1.0.3")
   }
 }
 
 /** JVM-only interop tests — verifies compatibility with java.util.zip. */
 trait JvmStreamsModule extends ScalaModule with ScalafmtModule {
   trait JvmTests extends ScalaTests with TestModule.Munit {
-    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    def mvnDeps = Seq(mvn"org.scalameta::munit::1.0.3")
   }
 }
 
@@ -94,7 +96,7 @@ object coreJS extends Cross[CoreJsModule](scalaVersions)
 trait CoreJsModule extends CrossScalaModule with CoreModule with ScalaJSModule {
   def scalaJSVersion = "1.20.0"
   object test extends ScalaJSTests with TestModule.Munit {
-    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    def mvnDeps = Seq(mvn"org.scalameta::munit::1.0.3")
   }
 }
 
@@ -107,7 +109,7 @@ trait CoreWasmModule extends CrossScalaModule with CoreModule with ScalaJSModule
   override def moduleSplitStyle = ModuleSplitStyle.FewestModules
   override def scalaJSExperimentalUseWebAssembly = true
   object test extends ScalaJSTests with TestModule.Munit {
-    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    def mvnDeps = Seq(mvn"org.scalameta::munit::1.0.3")
   }
 }
 
@@ -117,6 +119,6 @@ object coreNative extends Cross[CoreNativeModule](scalaVersions)
 trait CoreNativeModule extends CrossScalaModule with CoreModule with ScalaNativeModule {
   def scalaNativeVersion = "0.5.10"
   object test extends ScalaNativeTests with TestModule.Munit {
-    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    def mvnDeps = Seq(mvn"org.scalameta::munit::1.0.3")
   }
 }

@@ -287,7 +287,7 @@ When porting an upstream jzlib commit or adding a feature:
 | GZIP output | `core/src/com/jcraft/jzlib/GZIPOutputStream.scala` |
 | GZIP input | `core/src/com/jcraft/jzlib/GZIPInputStream.scala` |
 | Upstream jzlib source | `references/jzlib/` (git submodule) |
-| Mill build definition | `build.sc` |
+| Mill build definition | `build.mill` |
 | Mill version | `.mill-version` (0.12.11) |
 | Scalafmt config | `.scalafmt.conf` |
 | CI workflow | `.github/workflows/ci.yml` |
