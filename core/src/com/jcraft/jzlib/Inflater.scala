@@ -327,6 +327,10 @@ final class Inflater extends ZStream with AutoCloseable {
    *   [[JZlib.Z_OK]] on success, or [[JZlib.Z_DATA_ERROR]] if the dictionary does not match
    */
   def setDictionary(dictionary: Array[Byte], dictLength: Int): Int = {
+    if (dictionary == null)
+      throw new NullPointerException("dictionary is null")
+    if (dictLength < 0)
+      throw new IllegalArgumentException(s"dictLength is negative: $dictLength")
     if (istate == null) {
       msg = "inflateSetDictionary: not initialized"
       return Z_STREAM_ERROR

@@ -372,6 +372,10 @@ final class Deflater extends ZStream with AutoCloseable {
    *   [[JZlib.Z_OK]] on success
    */
   def setDictionary(dictionary: Array[Byte], dictLength: Int): Int = {
+    if (dictionary == null)
+      throw new NullPointerException("dictionary is null")
+    if (dictLength < 0)
+      throw new IllegalArgumentException(s"dictLength is negative: $dictLength")
     if (dstate == null) {
       msg = "deflateSetDictionary: not initialized"
       return Z_STREAM_ERROR

@@ -130,6 +130,76 @@ class InputValidationSuite extends munit.FunSuite {
     deflater.end()
   }
 
+  // --- Null buffer checks for setInput / setOutput ---
+
+  test("Deflater.setInput rejects null buffer") {
+    val deflater = Deflater()
+    intercept[NullPointerException] {
+      deflater.setInput(null)
+    }
+    deflater.end()
+  }
+
+  test("Deflater.setOutput rejects null buffer") {
+    val deflater = Deflater()
+    intercept[NullPointerException] {
+      deflater.setOutput(null)
+    }
+    deflater.end()
+  }
+
+  test("Inflater.setInput rejects null buffer") {
+    val inflater = Inflater()
+    intercept[NullPointerException] {
+      inflater.setInput(null)
+    }
+    inflater.end()
+  }
+
+  test("Inflater.setOutput rejects null buffer") {
+    val inflater = Inflater()
+    intercept[NullPointerException] {
+      inflater.setOutput(null)
+    }
+    inflater.end()
+  }
+
+  // --- Null / bounds checks for setDictionary ---
+
+  test("Deflater.setDictionary rejects null dictionary") {
+    val deflater = Deflater()
+    intercept[NullPointerException] {
+      deflater.setDictionary(null, 10)
+    }
+    deflater.end()
+  }
+
+  test("Deflater.setDictionary rejects negative dictLength") {
+    val deflater = Deflater()
+    val dict     = "test".getBytes
+    intercept[IllegalArgumentException] {
+      deflater.setDictionary(dict, -1)
+    }
+    deflater.end()
+  }
+
+  test("Inflater.setDictionary rejects null dictionary") {
+    val inflater = Inflater()
+    intercept[NullPointerException] {
+      inflater.setDictionary(null, 10)
+    }
+    inflater.end()
+  }
+
+  test("Inflater.setDictionary rejects negative dictLength") {
+    val inflater = Inflater()
+    val dict     = "test".getBytes
+    intercept[IllegalArgumentException] {
+      inflater.setDictionary(dict, -1)
+    }
+    inflater.end()
+  }
+
   test("windowBits=9 still works with all wrapper types") {
     val d1 = new Deflater()
     assertEquals(d1.init(Z_DEFAULT_COMPRESSION, 9, 8, W_ZLIB), Z_OK)

@@ -515,7 +515,10 @@ class ZStream {
    * @param buf
    *   the byte array to write compressed/decompressed data into
    */
-  def setOutput(buf: Array[Byte]): Unit = setOutput(buf, 0, buf.length)
+  def setOutput(buf: Array[Byte]): Unit = {
+    if (buf == null) throw new NullPointerException("output buffer is null")
+    setOutput(buf, 0, buf.length)
+  }
 
   /**
    * Sets the output buffer with offset and length.
@@ -539,7 +542,10 @@ class ZStream {
    * @param buf
    *   the byte array containing data to compress/decompress
    */
-  def setInput(buf: Array[Byte]): Unit = setInput(buf, 0, buf.length, false)
+  def setInput(buf: Array[Byte]): Unit = {
+    if (buf == null) throw new NullPointerException("input buffer is null")
+    setInput(buf, 0, buf.length, false)
+  }
 
   /**
    * Sets the input buffer, optionally appending to unconsumed input.
@@ -549,7 +555,10 @@ class ZStream {
    * @param append
    *   if `true`, appends to any unconsumed input rather than replacing it
    */
-  def setInput(buf: Array[Byte], append: Boolean): Unit = setInput(buf, 0, buf.length, append)
+  def setInput(buf: Array[Byte], append: Boolean): Unit = {
+    if (buf == null) throw new NullPointerException("input buffer is null")
+    setInput(buf, 0, buf.length, append)
+  }
 
   /**
    * Sets the input buffer with offset, length, and append control.
