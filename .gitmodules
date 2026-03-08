@@ -1,0 +1,3 @@
+[submodule "references/jzlib"]
+	path = references/jzlib
+	url = https://github.com/jruby/jzlib.git

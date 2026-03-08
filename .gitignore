@@ -36,3 +36,14 @@ build_graph.png
 lib_managed/
 project/build/target/
 project/boot/
+
+# Mill build outputs
+out/
+.bsp/
+.metals/
+.scala-build/
+
+# OS/IDE
+.DS_Store
+.idea/
+*.iml
