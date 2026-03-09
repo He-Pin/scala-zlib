@@ -371,6 +371,7 @@ Hot-path methods in `Deflate.scala` are annotated with `@inline`:
 | `GZIPIOStreamSuite` | jvm | JVM GZIP stream interop with `java.util.zip` |
 | `JRubyCompatSuite` | jvm | API compatibility with upstream jruby/jzlib |
 | `ZIOStreamSuite` | jvm | Legacy `ZOutputStream` / `ZInputStream` interop |
+| `CLIIntegrationSuite` | jvm | CLI-style GZIP round-trip, parallel blocks, compression levels, OS header |
 
 ## Development Workflow
 
