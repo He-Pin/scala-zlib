@@ -42,30 +42,30 @@ package com.jcraft.jzlib
  *
  * ==Compression levels==
  *
- *   - [[Z_NO_COMPRESSION]] (0) — no compression, pass-through
- *   - [[Z_BEST_SPEED]] (1) — fastest compression
- *   - [[Z_BEST_COMPRESSION]] (9) — smallest output
- *   - [[Z_DEFAULT_COMPRESSION]] (-1) — balance of speed and size (level 6)
+ *   - [[Z_NO_COMPRESSION]] (0) - no compression, pass-through
+ *   - [[Z_BEST_SPEED]] (1) - fastest compression
+ *   - [[Z_BEST_COMPRESSION]] (9) - smallest output
+ *   - [[Z_DEFAULT_COMPRESSION]] (-1) - balance of speed and size (level 6)
  *
  * ==Flush modes==
  *
- *   - [[Z_NO_FLUSH]] (0) — normal operation
- *   - [[Z_PARTIAL_FLUSH]] (1) — flush pending output
- *   - [[Z_SYNC_FLUSH]] (2) — flush to byte boundary
- *   - [[Z_FULL_FLUSH]] (3) — flush + reset compression state
- *   - [[Z_FINISH]] (4) — signal end of input; must call until `Z_STREAM_END`
+ *   - [[Z_NO_FLUSH]] (0) - normal operation
+ *   - [[Z_PARTIAL_FLUSH]] (1) - flush pending output
+ *   - [[Z_SYNC_FLUSH]] (2) - flush to byte boundary
+ *   - [[Z_FULL_FLUSH]] (3) - flush + reset compression state
+ *   - [[Z_FINISH]] (4) - signal end of input; must call until `Z_STREAM_END`
  *
  * ==Return codes==
  *
- *   - [[Z_OK]] (0) — success
- *   - [[Z_STREAM_END]] (1) — end of compressed data reached
- *   - [[Z_NEED_DICT]] (2) — a preset dictionary is required
- *   - [[Z_ERRNO]] (-1) — file error
- *   - [[Z_STREAM_ERROR]] (-2) — stream state inconsistency
- *   - [[Z_DATA_ERROR]] (-3) — invalid or corrupted data
- *   - [[Z_MEM_ERROR]] (-4) — insufficient memory
- *   - [[Z_BUF_ERROR]] (-5) — no progress possible
- *   - [[Z_VERSION_ERROR]] (-6) — version mismatch
+ *   - [[Z_OK]] (0) - success
+ *   - [[Z_STREAM_END]] (1) - end of compressed data reached
+ *   - [[Z_NEED_DICT]] (2) - a preset dictionary is required
+ *   - [[Z_ERRNO]] (-1) - file error
+ *   - [[Z_STREAM_ERROR]] (-2) - stream state inconsistency
+ *   - [[Z_DATA_ERROR]] (-3) - invalid or corrupted data
+ *   - [[Z_MEM_ERROR]] (-4) - insufficient memory
+ *   - [[Z_BUF_ERROR]] (-5) - no progress possible
+ *   - [[Z_VERSION_ERROR]] (-6) - version mismatch
  *
  * @see
  *   [[Deflater]] for compression
@@ -86,10 +86,10 @@ object JZlib {
   /**
    * Selects the wrapper format for compressed data.
    *
-   *   - [[W_NONE]] — raw deflate, no header or trailer
-   *   - [[W_ZLIB]] — zlib wrapper (RFC 1950): 2-byte header + Adler-32 trailer
-   *   - [[W_GZIP]] — GZIP wrapper (RFC 1952): GZIP header + CRC-32 trailer
-   *   - [[W_ANY]] — auto-detect ZLIB or GZIP on inflate (invalid for deflate)
+   *   - [[W_NONE]] - raw deflate, no header or trailer
+   *   - [[W_ZLIB]] - zlib wrapper (RFC 1950): 2-byte header + Adler-32 trailer
+   *   - [[W_GZIP]] - GZIP wrapper (RFC 1952): GZIP header + CRC-32 trailer
+   *   - [[W_ANY]] - auto-detect ZLIB or GZIP on inflate (invalid for deflate)
    */
   sealed abstract class WrapperType
   object WrapperType {
@@ -99,13 +99,13 @@ object JZlib {
     case object ANY  extends WrapperType
   }
 
-  /** Raw deflate — no header or trailer (RFC 1951). */
+  /** Raw deflate - no header or trailer (RFC 1951). */
   val W_NONE: WrapperType = WrapperType.NONE
 
-  /** Zlib wrapping — 2-byte header + Adler-32 trailer (RFC 1950). */
+  /** Zlib wrapping - 2-byte header + Adler-32 trailer (RFC 1950). */
   val W_ZLIB: WrapperType = WrapperType.ZLIB
 
-  /** GZIP wrapping — GZIP header + CRC-32 trailer (RFC 1952). */
+  /** GZIP wrapping - GZIP header + CRC-32 trailer (RFC 1952). */
   val W_GZIP: WrapperType = WrapperType.GZIP
 
   /** Auto-detect ZLIB or GZIP on inflate; invalid for deflate. */
@@ -127,24 +127,24 @@ object JZlib {
 
   // --- Compression strategies ---
 
-  /** Filtered strategy — for data produced by a filter or predictor. */
+  /** Filtered strategy - for data produced by a filter or predictor. */
   final val Z_FILTERED = 1
 
-  /** Huffman-only strategy — no string matching. */
+  /** Huffman-only strategy - no string matching. */
   final val Z_HUFFMAN_ONLY = 2
 
-  /** RLE strategy — fast for data with many repeated bytes. */
+  /** RLE strategy - fast for data with many repeated bytes. */
   final val Z_RLE = 3
 
-  /** Fixed Huffman tables — fastest encoding, no dynamic tree overhead. */
+  /** Fixed Huffman tables - fastest encoding, no dynamic tree overhead. */
   final val Z_FIXED = 4
 
-  /** Default strategy — suitable for most data. */
+  /** Default strategy - suitable for most data. */
   final val Z_DEFAULT_STRATEGY = 0
 
   // --- Flush modes ---
 
-  /** Normal operation — allow deflate to decide when to flush. */
+  /** Normal operation - allow deflate to decide when to flush. */
   final val Z_NO_FLUSH = 0
 
   /** Flush pending output (for streaming protocols). */
@@ -268,7 +268,7 @@ object JZlib {
   }
 
   /**
-   * Equivalent to [[deflateBound]] — returns an upper bound on compressed size. Matches the C zlib `compressBound()`
+   * Equivalent to [[deflateBound]] - returns an upper bound on compressed size. Matches the C zlib `compressBound()`
    * function.
    */
   def compressBound(sourceLen: Long): Long = deflateBound(sourceLen)
@@ -283,7 +283,7 @@ object JZlib {
    * @param sourceLen
    *   the length of uncompressed data
    * @param level
-   *   the compression level (0–9 or [[Z_DEFAULT_COMPRESSION]])
+   *   the compression level (0-9 or [[Z_DEFAULT_COMPRESSION]])
    * @return
    *   upper bound on compressed size
    */
@@ -592,6 +592,6 @@ object JZlib {
   case class UncompressResult(data: Array[Byte], inputBytesUsed: Int)
 }
 
-// Kept for source compatibility – the companion object holds the real API.
+// Kept for source compatibility - the companion object holds the real API.
 /** Not instantiable. Use the [[JZlib$ companion object]] for all constants and utilities. */
 final class JZlib private ()

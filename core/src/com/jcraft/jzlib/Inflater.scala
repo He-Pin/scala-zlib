@@ -93,14 +93,14 @@ final class Inflater extends ZStream with AutoCloseable {
     this()
     val ret = init(DEF_WBITS, wrapperType)
     if (ret != Z_OK)
-      throw new GZIPException(ret + ": " + msg)
+      throw new GZIPException(s"$ret: $msg")
   }
 
   /**
    * Creates an `Inflater` with the given window bits and wrapper type.
    *
    * @param w
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @param wrapperType
    *   expected input format
    * @throws GZIPException
@@ -110,14 +110,14 @@ final class Inflater extends ZStream with AutoCloseable {
     this()
     val ret = init(w, wrapperType)
     if (ret != Z_OK)
-      throw new GZIPException(ret + ": " + msg)
+      throw new GZIPException(s"$ret: $msg")
   }
 
   /**
    * Creates an `Inflater` with the given window bits (zlib-wrapped).
    *
    * @param w
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @throws GZIPException
    *   if initialization fails
    */
@@ -125,7 +125,7 @@ final class Inflater extends ZStream with AutoCloseable {
     this()
     val ret = init(w, false)
     if (ret != Z_OK)
-      throw new GZIPException(ret + ": " + msg)
+      throw new GZIPException(s"$ret: $msg")
   }
 
   /**
@@ -140,14 +140,14 @@ final class Inflater extends ZStream with AutoCloseable {
     this()
     val ret = init(DEF_WBITS, nowrap)
     if (ret != Z_OK)
-      throw new GZIPException(ret + ": " + msg)
+      throw new GZIPException(s"$ret: $msg")
   }
 
   /**
    * Creates an `Inflater` with the given window bits and raw-deflate flag.
    *
    * @param w
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @param nowrap
    *   if `true`, expects raw deflate input
    * @throws GZIPException
@@ -157,7 +157,7 @@ final class Inflater extends ZStream with AutoCloseable {
     this()
     val ret = init(w, nowrap)
     if (ret != Z_OK)
-      throw new GZIPException(ret + ": " + msg)
+      throw new GZIPException(s"$ret: $msg")
   }
 
   /**
@@ -186,7 +186,7 @@ final class Inflater extends ZStream with AutoCloseable {
    * Use [[JZlib.W_ANY]] to auto-detect ZLIB or GZIP input.
    *
    * @param w
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @param wrapperType
    *   expected input format
    * @return
@@ -221,7 +221,7 @@ final class Inflater extends ZStream with AutoCloseable {
    * Initializes with the given window bits (zlib wrapping).
    *
    * @param w
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @return
    *   [[JZlib.Z_OK]] on success
    */
@@ -258,7 +258,7 @@ final class Inflater extends ZStream with AutoCloseable {
    */
   override def inflate(f: Int): Int = {
     if (istate == null) {
-      msg = "inflate: not initialized — call init() before inflate()"
+      msg = "inflate: not initialized - call init() before inflate()"
       return Z_STREAM_ERROR
     }
     val ret = istate.inflate(f)
@@ -364,7 +364,7 @@ final class Inflater extends ZStream with AutoCloseable {
   /**
    * Closes this inflater and releases all resources.
    *
-   * Equivalent to calling [[end]]. This method is idempotent — calling it multiple times is safe. It never throws an
+   * Equivalent to calling [[end]]. This method is idempotent - calling it multiple times is safe. It never throws an
    * exception, making it suitable for use in `scala.util.Using` or try-with-resources blocks.
    */
   override def close(): Unit = end()

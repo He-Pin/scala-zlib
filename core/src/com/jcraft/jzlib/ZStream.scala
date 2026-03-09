@@ -45,10 +45,10 @@ import JZlib._
  *
  * ==Key fields==
  *
- *   - `next_in` / `next_in_index` / `avail_in` — input buffer, position, and remaining bytes
- *   - `next_out` / `next_out_index` / `avail_out` — output buffer, position, and remaining capacity
- *   - `total_in` / `total_out` — cumulative byte counts
- *   - `msg` — last error message (or `null`)
+ *   - `next_in` / `next_in_index` / `avail_in` - input buffer, position, and remaining bytes
+ *   - `next_out` / `next_out_index` / `avail_out` - output buffer, position, and remaining capacity
+ *   - `total_in` / `total_out` - cumulative byte counts
+ *   - `msg` - last error message (or `null`)
  *
  * ==Convenience methods==
  *
@@ -136,7 +136,7 @@ class ZStream {
    * Initializes the inflate stream with the given window bits and zlib wrapping.
    *
    * @param w
-   *   window size in bits (9–15); must match or exceed the window size used during compression
+   *   window size in bits (9-15); must match or exceed the window size used during compression
    * @return
    *   [[JZlib.Z_OK]] on success
    */
@@ -159,7 +159,7 @@ class ZStream {
    * Use [[JZlib.W_ANY]] to auto-detect whether input is ZLIB or GZIP wrapped.
    *
    * @param w
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @param wrapperType
    *   expected input format: [[JZlib.W_ZLIB]], [[JZlib.W_GZIP]], [[JZlib.W_NONE]], or [[JZlib.W_ANY]]
    * @return
@@ -287,7 +287,7 @@ class ZStream {
    * Initializes the deflate stream with the given level and optional raw-deflate mode.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param nowrap
    *   if `true`, produces raw deflate output (no zlib header/trailer)
    * @return
@@ -299,9 +299,9 @@ class ZStream {
    * Initializes the deflate stream with the given level and window bits (zlib wrapping).
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param bits
-   *   window size in bits (9–15); larger values give better compression at the cost of more memory
+   *   window size in bits (9-15); larger values give better compression at the cost of more memory
    * @return
    *   [[JZlib.Z_OK]] on success
    */
@@ -311,11 +311,11 @@ class ZStream {
    * Initializes the deflate stream with full control over parameters including wrapper type.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param bits
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @param memlevel
-   *   memory level for internal compression state (1–9); higher values use more memory but are faster
+   *   memory level for internal compression state (1-9); higher values use more memory but are faster
    * @param wrapperType
    *   output format: [[JZlib.W_ZLIB]], [[JZlib.W_GZIP]], or [[JZlib.W_NONE]]. [[JZlib.W_ANY]] is invalid for
    *   compression and causes [[JZlib.Z_STREAM_ERROR]].
@@ -336,11 +336,11 @@ class ZStream {
    * Core deflate initializer with compression level, window bits, and memory level.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param bits
    *   window size in bits; negative values mean raw deflate, values above 15 enable GZIP wrapping
    * @param memlevel
-   *   memory level (1–9)
+   *   memory level (1-9)
    * @return
    *   [[JZlib.Z_OK]] on success
    */
@@ -353,9 +353,9 @@ class ZStream {
    * Initializes the deflate stream with the given level, window bits, and raw-deflate flag.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param bits
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @param nowrap
    *   if `true`, produces raw deflate output (no header/trailer)
    * @return
@@ -406,7 +406,7 @@ class ZStream {
    * This can be used to switch between [[JZlib.Z_DEFAULT_STRATEGY]] and [[JZlib.Z_FILTERED]] mid-stream.
    *
    * @param level
-   *   new compression level (0–9 or -1)
+   *   new compression level (0-9 or -1)
    * @param strategy
    *   new strategy: [[JZlib.Z_DEFAULT_STRATEGY]], [[JZlib.Z_FILTERED]], or [[JZlib.Z_HUFFMAN_ONLY]]
    * @return

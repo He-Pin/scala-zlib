@@ -79,7 +79,7 @@ class ZOutputStream(out: OutputStream) extends FilterOutputStream(out) {
    * @param out
    *   underlying output stream
    * @param level
-   *   compression level (0–9, or [[JZlib.Z_DEFAULT_COMPRESSION]])
+   *   compression level (0-9, or [[JZlib.Z_DEFAULT_COMPRESSION]])
    */
   def this(out: OutputStream, level: Int) = {
     this(out)
@@ -95,7 +95,7 @@ class ZOutputStream(out: OutputStream) extends FilterOutputStream(out) {
    * @param out
    *   underlying output stream
    * @param level
-   *   compression level (0–9, or [[JZlib.Z_DEFAULT_COMPRESSION]])
+   *   compression level (0-9, or [[JZlib.Z_DEFAULT_COMPRESSION]])
    * @param nowrap
    *   if `true`, produce raw DEFLATE without a zlib header/trailer
    */

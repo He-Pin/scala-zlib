@@ -84,7 +84,7 @@ class GZIPHeader extends Cloneable {
   /**
    * Sets the operating system on which the file was compressed.
    *
-   * Valid values are 0–13 or 255 ([[GZIPHeader.OS_UNKNOWN]]). Use the `OS_*` constants from the [[GZIPHeader$]]
+   * Valid values are 0-13 or 255 ([[GZIPHeader.OS_UNKNOWN]]). Use the `OS_*` constants from the [[GZIPHeader$]]
    * companion object.
    *
    * @param os
@@ -166,7 +166,7 @@ class GZIPHeader extends Cloneable {
     if (d.level == JZlib.Z_BEST_SPEED) xfl |= 4
     else if (d.level == JZlib.Z_BEST_COMPRESSION) xfl |= 2
 
-    d.put_short(0x8b1f.toShort) // ID1 ID2
+    d.put_short((0x8b1f & 0xffff).toShort) // ID1 ID2
     d.put_byte(8.toByte)        // CM
     d.put_byte(flag.toByte)
     d.put_byte(mtime.toByte)
@@ -234,10 +234,10 @@ object GZIPHeader {
    * Detects the current operating system and returns the corresponding GZIP OS constant.
    *
    * Uses `System.getProperty("os.name")` for detection:
-   *   - Windows → [[OS_MSDOS]] (0)
-   *   - Linux, FreeBSD, SunOS → [[OS_UNIX]] (3)
-   *   - Mac OS X, Darwin → [[OS_MACOS]] (7)
-   *   - Other / null → [[OS_UNKNOWN]] (255)
+   *   - Windows -> [[OS_MSDOS]] (0)
+   *   - Linux, FreeBSD, SunOS -> [[OS_UNIX]] (3)
+   *   - Mac OS X, Darwin -> [[OS_MACOS]] (7)
+   *   - Other / null -> [[OS_UNKNOWN]] (255)
    *
    * @return
    *   the OS identifier byte as an `Int`

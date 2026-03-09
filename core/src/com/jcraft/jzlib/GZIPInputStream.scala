@@ -130,12 +130,12 @@ class GZIPInputStream(in: InputStream,
   }
 
   /** Reads decompressed bytes, transparently continuing across concatenated
-    * GZIP members as required by RFC 1952 §2.2.
+    * GZIP members as required by RFC 1952 section2.2.
     */
   override def read(b: Array[Byte], off: Int, len: Int): Int = {
     val n = super.read(b, off, len)
     if (n > 0) return n
-    // End of current member — check for another GZIP member
+    // End of current member - check for another GZIP member
     if (eof && startNextMember()) return read(b, off, len)
     -1
   }
