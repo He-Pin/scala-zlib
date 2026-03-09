@@ -43,26 +43,26 @@ object Tree {
   private final val L_CODES      = LITERALS + 1 + LENGTH_CODES
   private final val HEAP_SIZE    = 2 * L_CODES + 1
 
-  final val MAX_BL_BITS  = 7
-  final val END_BLOCK    = 256
-  final val REP_3_6      = 16
-  final val REPZ_3_10    = 17
-  final val REPZ_11_138  = 18
+  final val MAX_BL_BITS = 7
+  final val END_BLOCK   = 256
+  final val REP_3_6     = 16
+  final val REPZ_3_10   = 17
+  final val REPZ_11_138 = 18
 
   final val extra_lbits: Array[Int] = Array(
-    0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0,
   )
 
   final val extra_dbits: Array[Int] = Array(
-    0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13
+    0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13,
   )
 
   final val extra_blbits: Array[Int] = Array(
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,7
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 7,
   )
 
   final val bl_order: Array[Byte] = Array(
-    16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15
+    16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
   )
 
   final val Buf_size = 8 * 2
@@ -70,8 +70,8 @@ object Tree {
   final val DIST_CODE_LEN = 512
 
   final val _dist_code: Array[Byte] = Array(
-     0,  1,  2,  3,  4,  4,  5,  5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  8,
-     8,  8,  8,  8,  9,  9,  9,  9,  9,  9,  9,  9, 10, 10, 10, 10, 10, 10, 10, 10,
+    0, 1, 2, 3, 4, 4, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8,
+    8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10,
     10, 10, 10, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
     11, 11, 11, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
     12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 13, 13, 13,
@@ -82,7 +82,7 @@ object Tree {
     14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,  0,  0, 16, 17,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 0, 0, 16, 17,
     18, 18, 19, 19, 20, 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22,
     23, 23, 23, 23, 23, 23, 23, 23, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
     24, 24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25,
@@ -95,11 +95,11 @@ object Tree {
     28, 28, 28, 28, 28, 28, 28, 28, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
     29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
     29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
-    29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29
+    29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29,
   )
 
   final val _length_code: Array[Byte] = Array(
-     0,  1,  2,  3,  4,  5,  6,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 12, 12,
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 12, 12,
     13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 15, 16, 16, 16, 16, 16, 16, 16, 16,
     17, 17, 17, 17, 17, 17, 17, 17, 18, 18, 18, 18, 18, 18, 18, 18, 19, 19, 19, 19,
     19, 19, 19, 19, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
@@ -111,28 +111,28 @@ object Tree {
     25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 26, 26, 26, 26, 26, 26, 26, 26,
     26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,
     26, 26, 26, 26, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27,
-    27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 28
+    27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 28,
   )
 
   final val base_length: Array[Int] = Array(
     0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56,
-    64, 80, 96, 112, 128, 160, 192, 224, 0
+    64, 80, 96, 112, 128, 160, 192, 224, 0,
   )
 
   final val base_dist: Array[Int] = Array(
-       0,   1,    2,    3,    4,    6,    8,   12,   16,   24,
-      32,  48,   64,   96,  128,  192,  256,  384,  512,  768,
-    1024, 1536, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 24576
+    0, 1, 2, 3, 4, 6, 8, 12, 16, 24,
+    32, 48, 64, 96, 128, 192, 256, 384, 512, 768,
+    1024, 1536, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 24576,
   )
 
   def d_code(dist: Int): Int =
-    if (dist < 256) (_dist_code(dist) & 0xff) else (_dist_code(256 + (dist >>> 7)) & 0xff)
+    if (dist < 256) _dist_code(dist) & 0xff else _dist_code(256 + (dist >>> 7)) & 0xff
 
   private def gen_codes(
-    tree:     Array[Short],
+    tree: Array[Short],
     max_code: Int,
     bl_count: Array[Short],
-    next_code: Array[Short]
+    next_code: Array[Short],
   ): Unit = {
     var code: Short = 0
     var bits        = 0
@@ -158,15 +158,19 @@ object Tree {
   }
 
   private def bi_reverse(code: Int, len: Int): Int = {
-    var res  = 0
-    var c    = code
-    var l    = len
-    do {
-      res |= c & 1
-      c >>>= 1
-      res <<= 1
-      l -= 1
-    } while (l > 0)
+    var res = 0
+    var c   = code
+    var l   = len;
+    {
+      var continueLoop_7282 = true;
+      while (continueLoop_7282) {
+        res |= c & 1
+        c >>>= 1
+        res <<= 1
+        l -= 1
+        continueLoop_7282 = l > 0
+      }
+    }
     res >>> 1
   }
 }
@@ -174,9 +178,9 @@ object Tree {
 final class Tree {
   import Tree._
 
-  var dyn_tree:  Array[Short] = null
-  var max_code:  Int          = 0
-  var stat_desc: StaticTree   = null
+  var dyn_tree: Array[Short] = null
+  var max_code: Int          = 0
+  var stat_desc: StaticTree  = null
 
   def gen_bitlen(s: Deflate): Unit = {
     val tree       = dyn_tree
@@ -204,7 +208,8 @@ final class Tree {
       if (bits > max_length) { bits = max_length; overflow += 1 }
       tree(n * 2 + 1) = bits.toShort
 
-      if (n > max_code) { h += 1 } else {
+      if (n > max_code) { h += 1 }
+      else {
         s.bl_count(bits) = (s.bl_count(bits) + 1).toShort
         xbits = 0
         if (n >= base) xbits = extra(n - base)
@@ -214,23 +219,27 @@ final class Tree {
         h += 1
       }
     }
-    if (overflow == 0) return
-
-    do {
-      bits = max_length - 1
-      while (s.bl_count(bits) == 0) bits -= 1
-      s.bl_count(bits) = (s.bl_count(bits) - 1).toShort
-      s.bl_count(bits + 1) = (s.bl_count(bits + 1) + 2).toShort
-      s.bl_count(max_length) = (s.bl_count(max_length) - 1).toShort
-      overflow -= 2
-    } while (overflow > 0)
+    if (overflow == 0) return;
+    {
+      var continueLoop_8708 = true;
+      while (continueLoop_8708) {
+        bits = max_length - 1
+        while (s.bl_count(bits) == 0) bits -= 1
+        s.bl_count(bits) = (s.bl_count(bits) - 1).toShort
+        s.bl_count(bits + 1) = (s.bl_count(bits + 1) + 2).toShort
+        s.bl_count(max_length) = (s.bl_count(max_length) - 1).toShort
+        overflow -= 2
+        continueLoop_8708 = overflow > 0
+      }
+    }
 
     bits = max_length
     while (bits != 0) {
       n = s.bl_count(bits)
       while (n != 0) {
-        m = s.heap({ h -= 1; h })
-        if (m > max_code) { n -= 1 } else {
+        m = s.heap { h -= 1; h }
+        if (m > max_code) { n -= 1 }
+        else {
           if (tree(m * 2 + 1) != bits) {
             s.opt_len += ((bits.toLong - tree(m * 2 + 1).toLong) * tree(m * 2).toLong).toInt
             tree(m * 2 + 1) = bits.toShort
@@ -243,13 +252,13 @@ final class Tree {
   }
 
   def build_tree(s: Deflate): Unit = {
-    val tree  = dyn_tree
-    val stree = stat_desc.static_tree
-    val elems = stat_desc.elems
-    var n     = 0
-    var m     = 0
+    val tree     = dyn_tree
+    val stree    = stat_desc.static_tree
+    val elems    = stat_desc.elems
+    var n        = 0
+    var m        = 0
     var max_code = -1
-    var node  = 0
+    var node     = 0
 
     s.heap_len = 0
     s.heap_max = HEAP_SIZE
@@ -268,7 +277,11 @@ final class Tree {
     }
 
     while (s.heap_len < 2) {
-      node = { s.heap_len += 1; if (max_code < 2) { max_code += 1; max_code } else 0 }
+      node = {
+        s.heap_len += 1;
+        if (max_code < 2) { max_code += 1; max_code }
+        else 0
+      }
       s.heap(s.heap_len) = node
       tree(node * 2) = 1
       s.depth(node) = 0
@@ -280,26 +293,30 @@ final class Tree {
     n = s.heap_len / 2
     while (n >= 1) { s.pqdownheap(tree, n); n -= 1 }
 
-    node = elems
-    do {
-      n = s.heap(1)
-      s.heap(1) = s.heap(s.heap_len)
-      s.heap_len -= 1
-      s.pqdownheap(tree, 1)
-      m = s.heap(1)
+    node = elems;
+    {
+      var continueLoop_10415 = true;
+      while (continueLoop_10415) {
+        n = s.heap(1)
+        s.heap(1) = s.heap(s.heap_len)
+        s.heap_len -= 1
+        s.pqdownheap(tree, 1)
+        m = s.heap(1)
 
-      s.heap_max -= 1; s.heap(s.heap_max) = n
-      s.heap_max -= 1; s.heap(s.heap_max) = m
+        s.heap_max -= 1; s.heap(s.heap_max) = n
+        s.heap_max -= 1; s.heap(s.heap_max) = m
 
-      tree(node * 2) = (tree(n * 2) + tree(m * 2)).toShort
-      s.depth(node) = (math.max(s.depth(n), s.depth(m)) + 1).toByte
-      tree(n * 2 + 1) = node.toShort
-      tree(m * 2 + 1) = node.toShort
+        tree(node * 2) = (tree(n * 2) + tree(m * 2)).toShort
+        s.depth(node) = (math.max(s.depth(n), s.depth(m)) + 1).toByte
+        tree(n * 2 + 1) = node.toShort
+        tree(m * 2 + 1) = node.toShort
 
-      s.heap(1) = node
-      node += 1
-      s.pqdownheap(tree, 1)
-    } while (s.heap_len >= 2)
+        s.heap(1) = node
+        node += 1
+        s.pqdownheap(tree, 1)
+        continueLoop_10415 = s.heap_len >= 2
+      }
+    }
 
     s.heap_max -= 1; s.heap(s.heap_max) = s.heap(1)
 

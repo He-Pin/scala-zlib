@@ -29,50 +29,50 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jzlib
 
-import java.io.{EOFException, FilterInputStream, IOException, InputStream}
+import java.io.{ EOFException, FilterInputStream, IOException, InputStream }
 import JZlib._
 
 object InflaterInputStream {
   private[jzlib] final val DEFAULT_BUFSIZE = 512
 }
 
-/** Wraps an [[java.io.InputStream]] to decompress data compressed with the DEFLATE algorithm (RFC 1951).
-  *
-  * Reads from this stream return decompressed data. The compressed bytes are read from the
-  * underlying input stream and inflated via the supplied [[Inflater]].
-  *
-  * By default the stream expects zlib-wrapped data (RFC 1950). Pass `nowrap = true` to decompress
-  * raw DEFLATE data without a zlib header and trailer.
-  *
-  * Usage:
-  * {{{
-  * val fis = new java.io.FileInputStream("data.zlib")
-  * val iis = new InflaterInputStream(fis)
-  * val buf = new Array[Byte](1024)
-  * var n = iis.read(buf)
-  * while (n != -1) {
-  *   System.out.write(buf, 0, n)
-  *   n = iis.read(buf)
-  * }
-  * iis.close()
-  * }}}
-  *
-  * @param in
-  *   underlying input stream containing compressed data
-  * @param inflater
-  *   the [[Inflater]] used to decompress data
-  * @param size
-  *   internal buffer size in bytes (must be &gt; 0, default 512)
-  * @param close_in
-  *   whether [[close()]] should also close the underlying stream (default `true`)
-  * @see [[DeflaterOutputStream]] for compression
-  * @see [[GZIPInputStream]] for GZIP format decompression
-  */
-class InflaterInputStream(in: InputStream,
-                           val inflater: Inflater,
-                           size: Int,
-                           close_in: Boolean)
-  extends FilterInputStream(in) {
+/**
+ * Wraps an [[java.io.InputStream]] to decompress data compressed with the DEFLATE algorithm (RFC 1951).
+ *
+ * Reads from this stream return decompressed data. The compressed bytes are read from the underlying input stream and
+ * inflated via the supplied [[Inflater]].
+ *
+ * By default the stream expects zlib-wrapped data (RFC 1950). Pass `nowrap = true` to decompress raw DEFLATE data
+ * without a zlib header and trailer.
+ *
+ * Usage:
+ * {{{
+ * val fis = new java.io.FileInputStream("data.zlib")
+ * val iis = new InflaterInputStream(fis)
+ * val buf = new Array[Byte](1024)
+ * var n = iis.read(buf)
+ * while (n != -1) {
+ *   System.out.write(buf, 0, n)
+ *   n = iis.read(buf)
+ * }
+ * iis.close()
+ * }}}
+ *
+ * @param in
+ *   underlying input stream containing compressed data
+ * @param inflater
+ *   the [[Inflater]] used to decompress data
+ * @param size
+ *   internal buffer size in bytes (must be &gt; 0, default 512)
+ * @param close_in
+ *   whether [[close()]] should also close the underlying stream (default `true`)
+ * @see
+ *   [[DeflaterOutputStream]] for compression
+ * @see
+ *   [[GZIPInputStream]] for GZIP format decompression
+ */
+class InflaterInputStream(in: InputStream, val inflater: Inflater, size: Int, close_in: Boolean)
+    extends FilterInputStream(in) {
 
   if (in == null || inflater == null) throw new NullPointerException()
   else if (size <= 0) throw new IllegalArgumentException("buffer size must be greater than 0")
@@ -87,31 +87,34 @@ class InflaterInputStream(in: InputStream,
 
   private val byte1: Array[Byte] = new Array[Byte](1)
 
-  /** Creates an `InflaterInputStream` with a 512-byte buffer.
-    * If `nowrap` is `true`, expects raw DEFLATE data (no header/trailer);
-    * otherwise expects zlib-wrapped data (RFC 1950). Returns -1 at end of stream.
-    */
+  /**
+   * Creates an `InflaterInputStream` with a 512-byte buffer. If `nowrap` is `true`, expects raw DEFLATE data (no
+   * header/trailer); otherwise expects zlib-wrapped data (RFC 1950). Returns -1 at end of stream.
+   */
   def this(in: InputStream, nowrap: Boolean) = {
     this(in, new Inflater(nowrap), InflaterInputStream.DEFAULT_BUFSIZE, true)
     myinflater = true
   }
 
-  /** Creates an `InflaterInputStream` expecting zlib-wrapped data (RFC 1950) with a 512-byte
-    * buffer. Closes the underlying stream on [[close()]]. Returns -1 at end of stream.
-    */
+  /**
+   * Creates an `InflaterInputStream` expecting zlib-wrapped data (RFC 1950) with a 512-byte buffer. Closes the
+   * underlying stream on [[close()]]. Returns -1 at end of stream.
+   */
   def this(in: InputStream) = {
     this(in, false)
   }
 
-  /** Creates an `InflaterInputStream` with a 512-byte buffer.
-    * Wrapper type is determined by the supplied [[Inflater]]. Returns -1 at end of stream.
-    */
+  /**
+   * Creates an `InflaterInputStream` with a 512-byte buffer. Wrapper type is determined by the supplied [[Inflater]].
+   * Returns -1 at end of stream.
+   */
   def this(in: InputStream, inflater: Inflater) =
     this(in, inflater, InflaterInputStream.DEFAULT_BUFSIZE, true)
 
-  /** Creates an `InflaterInputStream` with the given buffer size.
-    * Wrapper type is determined by the supplied [[Inflater]]. Returns -1 at end of stream.
-    */
+  /**
+   * Creates an `InflaterInputStream` with the given buffer size. Wrapper type is determined by the supplied
+   * [[Inflater]]. Returns -1 at end of stream.
+   */
   def this(in: InputStream, inflater: Inflater, size: Int) =
     this(in, inflater, size, true)
 
@@ -121,13 +124,14 @@ class InflaterInputStream(in: InputStream,
     if (read(byte1, 0, 1) == -1) -1 else byte1(0) & 0xff
   }
 
-  /** Reads up to `len` decompressed bytes into `b` starting at `off`.
-    *
-    * @return
-    *   the number of bytes actually read, or -1 at end of stream
-    * @throws IOException
-    *   if the compressed data is corrupt or an I/O error occurs
-    */
+  /**
+   * Reads up to `len` decompressed bytes into `b` starting at `off`.
+   *
+   * @return
+   *   the number of bytes actually read, or -1 at end of stream
+   * @throws IOException
+   *   if the compressed data is corrupt or an I/O error occurs
+   */
   override def read(b: Array[Byte], off: Int, len: Int): Int = {
     if (closed) throw new IOException("Stream closed")
     if (b == null) {
@@ -140,23 +144,23 @@ class InflaterInputStream(in: InputStream,
       return -1
     }
 
-    var n   = 0
+    var n    = 0
     var off0 = off
     inflater.setOutput(b, off, len)
     while (!eof) {
       if (inflater.avail_in == 0)
         fill()
       val err = inflater.inflate(Z_NO_FLUSH)
-      n   += inflater.next_out_index - off0
+      n += inflater.next_out_index - off0
       off0 = inflater.next_out_index
       err match {
-        case Z_DATA_ERROR =>
+        case Z_DATA_ERROR               =>
           throw new IOException(inflater.msg)
         case Z_STREAM_END | Z_NEED_DICT =>
           eof = true
           if (err == Z_NEED_DICT)
             return -1
-        case _ =>
+        case _                          =>
       }
       if (inflater.avail_out == 0)
         return n
@@ -164,10 +168,11 @@ class InflaterInputStream(in: InputStream,
     n
   }
 
-  /** Returns 0 after the end of the compressed data has been reached, 1 otherwise.
-    *
-    * Note: this does '''not''' return the number of bytes that can be read without blocking.
-    */
+  /**
+   * Returns 0 after the end of the compressed data has been reached, 1 otherwise.
+   *
+   * Note: this does '''not''' return the number of bytes that can be read without blocking.
+   */
   override def available(): Int = {
     if (closed) throw new IOException("Stream closed")
     if (eof) 0 else 1
@@ -246,14 +251,14 @@ class InflaterInputStream(in: InputStream,
     tmp
   }
 
-  /** Reads the zlib or GZIP header from the underlying stream without decompressing data.
-    *
-    * This is useful when header metadata (e.g. GZIP filename, modification time) is needed before
-    * reading the payload.
-    *
-    * @throws IOException
-    *   if no input is available or the header is invalid
-    */
+  /**
+   * Reads the zlib or GZIP header from the underlying stream without decompressing data.
+   *
+   * This is useful when header metadata (e.g. GZIP filename, modification time) is needed before reading the payload.
+   *
+   * @throws IOException
+   *   if no input is available or the header is invalid
+   */
   def readHeader(): Unit = {
     val empty = "".getBytes()
     inflater.setInput(empty, 0, 0, false)
@@ -264,16 +269,20 @@ class InflaterInputStream(in: InputStream,
       return
     }
 
-    val b1 = new Array[Byte](1)
-    do {
-      val i = in.read(b1)
-      if (i <= 0)
-        throw new IOException("no input")
-      inflater.setInput(b1)
-      val err = inflater.inflate(Z_NO_FLUSH)
-      if (err != 0 /*Z_OK*/)
-        throw new IOException(inflater.msg)
-    } while (inflater.istate.inParsingHeader())
+    val b1 = new Array[Byte](1);
+    {
+      var continueLoop_9155 = true;
+      while (continueLoop_9155) {
+        val i   = in.read(b1)
+        if (i <= 0)
+          throw new IOException("no input")
+        inflater.setInput(b1)
+        val err = inflater.inflate(Z_NO_FLUSH)
+        if (err != 0 /*Z_OK*/ )
+          throw new IOException(inflater.msg)
+        continueLoop_9155 = inflater.istate.inParsingHeader()
+      }
+    }
   }
 
   /** Returns the underlying [[Inflater]] used by this stream. */

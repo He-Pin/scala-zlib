@@ -29,74 +29,77 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jzlib
 
-import java.io.{IOException, InputStream}
+import java.io.{ IOException, InputStream }
 import JZlib._
 
-/** Wraps an [[java.io.InputStream]] to decompress GZIP-compressed data (RFC 1952).
-  *
-  * Extends [[InflaterInputStream]] with GZIP header and trailer parsing. After decompression is
-  * complete, GZIP metadata (filename, comment, modification time, OS, CRC-32) is available via
-  * accessor methods.
-  *
-  * Usage:
-  * {{{
-  * val fis = new java.io.FileInputStream("data.gz")
-  * val gis = new GZIPInputStream(fis)
-  * val buf = new Array[Byte](1024)
-  * var n = gis.read(buf)
-  * while (n != -1) {
-  *   System.out.write(buf, 0, n)
-  *   n = gis.read(buf)
-  * }
-  * println("Original file: " + gis.getName())
-  * gis.close()
-  * }}}
-  *
-  * @param in
-  *   underlying input stream containing GZIP-compressed data
-  * @param inflater
-  *   the [[Inflater]] used for decompression (must be configured with GZIP wrapping, i.e. `wbits = 15 + 16`)
-  * @param size
-  *   internal buffer size in bytes (default 512)
-  * @param close_in
-  *   whether [[close()]] should also close the underlying stream (default `true`)
-  * @see [[GZIPOutputStream]] for compression
-  * @see [[InflaterInputStream]] for zlib-wrapped decompression
-  */
-class GZIPInputStream(in: InputStream,
-                       inflater: Inflater,
-                       size: Int,
-                       close_in: Boolean)
-  extends InflaterInputStream(in, inflater, size, close_in) {
+/**
+ * Wraps an [[java.io.InputStream]] to decompress GZIP-compressed data (RFC 1952).
+ *
+ * Extends [[InflaterInputStream]] with GZIP header and trailer parsing. After decompression is complete, GZIP metadata
+ * (filename, comment, modification time, OS, CRC-32) is available via accessor methods.
+ *
+ * Usage:
+ * {{{
+ * val fis = new java.io.FileInputStream("data.gz")
+ * val gis = new GZIPInputStream(fis)
+ * val buf = new Array[Byte](1024)
+ * var n = gis.read(buf)
+ * while (n != -1) {
+ *   System.out.write(buf, 0, n)
+ *   n = gis.read(buf)
+ * }
+ * println("Original file: " + gis.getName())
+ * gis.close()
+ * }}}
+ *
+ * @param in
+ *   underlying input stream containing GZIP-compressed data
+ * @param inflater
+ *   the [[Inflater]] used for decompression (must be configured with GZIP wrapping, i.e. `wbits = 15 + 16`)
+ * @param size
+ *   internal buffer size in bytes (default 512)
+ * @param close_in
+ *   whether [[close()]] should also close the underlying stream (default `true`)
+ * @see
+ *   [[GZIPOutputStream]] for compression
+ * @see
+ *   [[InflaterInputStream]] for zlib-wrapped decompression
+ */
+class GZIPInputStream(in: InputStream, inflater: Inflater, size: Int, close_in: Boolean)
+    extends InflaterInputStream(in, inflater, size, close_in) {
 
-  /** Creates a `GZIPInputStream` with the given buffer size and close behavior.
-    *
-    * An [[Inflater]] configured for GZIP wrapping is created automatically.
-    *
-    * @param in
-    *   underlying input stream
-    * @param size
-    *   internal buffer size in bytes
-    * @param close_in
-    *   whether [[close()]] should also close the underlying stream
-    */
+  /**
+   * Creates a `GZIPInputStream` with the given buffer size and close behavior.
+   *
+   * An [[Inflater]] configured for GZIP wrapping is created automatically.
+   *
+   * @param in
+   *   underlying input stream
+   * @param size
+   *   internal buffer size in bytes
+   * @param close_in
+   *   whether [[close()]] should also close the underlying stream
+   */
   def this(in: InputStream, size: Int, close_in: Boolean) = {
     this(in, new Inflater(15 + 16), size, close_in)
     myinflater = true
   }
 
-  /** Creates a `GZIPInputStream` with the default buffer size (512 bytes).
-    *
-    * @param in
-    *   underlying input stream containing GZIP-compressed data
-    */
+  /**
+   * Creates a `GZIPInputStream` with the default buffer size (512 bytes).
+   *
+   * @param in
+   *   underlying input stream containing GZIP-compressed data
+   */
   def this(in: InputStream) =
     this(in, InflaterInputStream.DEFAULT_BUFSIZE, true)
 
-  /** Returns the modification time from the GZIP header, in seconds since the Unix epoch.
-    *
-    * @deprecated Use [[getModifiedTime()]] instead (note the capital 'T').
-    */
+  /**
+   * Returns the modification time from the GZIP header, in seconds since the Unix epoch.
+   *
+   * @deprecated
+   *   Use [[getModifiedTime()]] instead (note the capital 'T').
+   */
   @deprecated("Use getModifiedTime()", "1.1.5")
   def getModifiedtime(): Long = this.getModifiedTime()
 
@@ -116,42 +119,45 @@ class GZIPInputStream(in: InputStream,
   def getComment(): String =
     inflater.istate.getGZIPHeader.getComment
 
-  /** Returns the CRC-32 checksum of the decompressed data.
-    *
-    * Available only after all data has been read (i.e. [[read()]] has returned -1).
-    *
-    * @throws GZIPException
-    *   if decompression is not yet complete
-    */
+  /**
+   * Returns the CRC-32 checksum of the decompressed data.
+   *
+   * Available only after all data has been read (i.e. [[read()]] has returned -1).
+   *
+   * @throws GZIPException
+   *   if decompression is not yet complete
+   */
   def getCRC(): Long = {
-    if (inflater.istate.mode != 12 /*DONE*/)
+    if (inflater.istate.mode != 12 /*DONE*/ )
       throw new GZIPException("checksum is not calculated yet.")
     inflater.istate.getGZIPHeader.getCRC
   }
 
-  /** Reads decompressed bytes, transparently continuing across concatenated
-    * GZIP members as required by RFC 1952 §2.2.
-    */
+  /**
+   * Reads decompressed bytes, transparently continuing across concatenated GZIP members as required by RFC 1952
+   * section2.2.
+   */
   override def read(b: Array[Byte], off: Int, len: Int): Int = {
     val n = super.read(b, off, len)
     if (n > 0) return n
-    // End of current member — check for another GZIP member
+    // End of current member - check for another GZIP member
     if (eof && startNextMember()) return read(b, off, len)
     -1
   }
 
-  /** Attempts to start decompressing the next GZIP member.
-    *
-    * Saves any unconsumed input from the inflater, checks for a valid
-    * GZIP magic header, re-initialises the inflater, and parses the
-    * new member header.
-    *
-    * @return `true` if a new member was found and initialised
-    */
+  /**
+   * Attempts to start decompressing the next GZIP member.
+   *
+   * Saves any unconsumed input from the inflater, checks for a valid GZIP magic header, re-initialises the inflater,
+   * and parses the new member header.
+   *
+   * @return
+   *   `true` if a new member was found and initialised
+   */
   private def startNextMember(): Boolean = {
     // Save any remaining input from the current inflater
     val savedLen = inflater.avail_in
-    val saved = if (savedLen > 0) {
+    val saved    = if (savedLen > 0) {
       val tmp = new Array[Byte](savedLen)
       System.arraycopy(inflater.next_in, inflater.next_in_index, tmp, 0, savedLen)
       tmp
@@ -185,16 +191,20 @@ class GZIPInputStream(in: InputStream,
     inflater.setOutput(empty, 0, 0)
     inflater.setInput(headerBuf, 0, headerLen, false)
 
-    val b1 = new Array[Byte](1)
-    do {
-      if (inflater.avail_in <= 0) {
-        val i = in.read(b1)
-        if (i <= 0) return false
-        inflater.setInput(b1, 0, 1, true)
+    val b1 = new Array[Byte](1);
+    {
+      var continueLoop_7002 = true;
+      while (continueLoop_7002) {
+        if (inflater.avail_in <= 0) {
+          val i = in.read(b1)
+          if (i <= 0) return false
+          inflater.setInput(b1, 0, 1, true)
+        }
+        val err = inflater.inflate(Z_NO_FLUSH)
+        if (err != 0) return false
+        continueLoop_7002 = inflater.istate.inParsingHeader()
       }
-      val err = inflater.inflate(Z_NO_FLUSH)
-      if (err != 0) return false
-    } while (inflater.istate.inParsingHeader())
+    }
     true
   }
 
@@ -217,38 +227,42 @@ class GZIPInputStream(in: InputStream,
 
     inflater.setInput(b, 0, n, false)
 
-    val b1 = new Array[Byte](1)
-    do {
-      if (inflater.avail_in <= 0) {
-        val i = in.read(b1)
-        if (i <= 0)
-          throw new IOException("no input")
-        inflater.setInput(b1, 0, 1, true)
-      }
-
-      val err = inflater.inflate(Z_NO_FLUSH)
-
-      if (err != 0 /*Z_OK*/) {
-        val len = 2048 - inflater.next_in.length
-        if (len > 0) {
-          val tmp = new Array[Byte](len)
-          val nn  = fillBuf(tmp)
-          if (nn > 0) {
-            inflater.avail_in     += inflater.next_in_index
-            inflater.next_in_index = 0
-            inflater.setInput(tmp, 0, nn, true)
-          }
+    val b1 = new Array[Byte](1);
+    {
+      var continueLoop_7834 = true;
+      while (continueLoop_7834) {
+        if (inflater.avail_in <= 0) {
+          val i = in.read(b1)
+          if (i <= 0)
+            throw new IOException("no input")
+          inflater.setInput(b1, 0, 1, true)
         }
-        inflater.avail_in     += inflater.next_in_index
-        inflater.next_in_index = 0
-        throw new IOException(inflater.msg)
+
+        val err = inflater.inflate(Z_NO_FLUSH)
+
+        if (err != 0 /*Z_OK*/ ) {
+          val len = 2048 - inflater.next_in.length
+          if (len > 0) {
+            val tmp = new Array[Byte](len)
+            val nn  = fillBuf(tmp)
+            if (nn > 0) {
+              inflater.avail_in += inflater.next_in_index
+              inflater.next_in_index = 0
+              inflater.setInput(tmp, 0, nn, true)
+            }
+          }
+          inflater.avail_in += inflater.next_in_index
+          inflater.next_in_index = 0
+          throw new IOException(inflater.msg)
+        }
+        continueLoop_7834 = inflater.istate.inParsingHeader()
       }
-    } while (inflater.istate.inParsingHeader())
+    }
   }
 
   private def fillBuf(buf: Array[Byte]): Int = {
-    val len = buf.length
-    var n   = 0
+    val len  = buf.length
+    var n    = 0
     var cont = true
     while (cont) {
       var i = -1

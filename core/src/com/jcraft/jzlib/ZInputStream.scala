@@ -86,7 +86,7 @@ class ZInputStream(in: InputStream) extends FilterInputStream(in) {
    * @param in
    *   underlying input stream containing uncompressed data
    * @param level
-   *   compression level (0–9, or [[JZlib.Z_DEFAULT_COMPRESSION]])
+   *   compression level (0-9, or [[JZlib.Z_DEFAULT_COMPRESSION]])
    */
   def this(in: InputStream, level: Int) = {
     this(in)

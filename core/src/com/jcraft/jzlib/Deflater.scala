@@ -93,14 +93,14 @@ final class Deflater extends ZStream with AutoCloseable {
     this()
     val ret = init(level, MAX_WBITS)
     if (ret != Z_OK)
-      throw new GZIPException(ret + ": " + msg)
+      throw new GZIPException(s"$ret: $msg")
   }
 
   /**
    * Creates a `Deflater` with the given level and optional raw-deflate mode.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param nowrap
    *   if `true`, produces raw deflate output (no zlib header/trailer)
    * @throws GZIPException
@@ -110,16 +110,16 @@ final class Deflater extends ZStream with AutoCloseable {
     this()
     val ret = init(level, MAX_WBITS, nowrap)
     if (ret != Z_OK)
-      throw new GZIPException(ret + ": " + msg)
+      throw new GZIPException(s"$ret: $msg")
   }
 
   /**
    * Creates a `Deflater` with the given level and window bits.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param bits
-   *   window size in bits (9–15); larger values give better compression at the cost of more memory
+   *   window size in bits (9-15); larger values give better compression at the cost of more memory
    * @throws GZIPException
    *   if initialization fails
    */
@@ -127,16 +127,16 @@ final class Deflater extends ZStream with AutoCloseable {
     this()
     val ret = init(level, bits, false)
     if (ret != Z_OK)
-      throw new GZIPException(ret + ": " + msg)
+      throw new GZIPException(s"$ret: $msg")
   }
 
   /**
    * Creates a `Deflater` with the given level, window bits, and raw-deflate flag.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param bits
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @param nowrap
    *   if `true`, produces raw deflate output
    * @throws GZIPException
@@ -146,7 +146,7 @@ final class Deflater extends ZStream with AutoCloseable {
     this()
     val ret = init(level, bits, nowrap)
     if (ret != Z_OK)
-      throw new GZIPException(ret + ": " + msg)
+      throw new GZIPException(s"$ret: $msg")
   }
 
   /**
@@ -155,11 +155,11 @@ final class Deflater extends ZStream with AutoCloseable {
    * This is the most flexible constructor. Use [[JZlib.W_GZIP]] for GZIP output or [[JZlib.W_NONE]] for raw deflate.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param bits
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @param memlevel
-   *   memory level for internal compression state (1–9); higher values use more memory but are faster
+   *   memory level for internal compression state (1-9); higher values use more memory but are faster
    * @param wrapperType
    *   output format: [[JZlib.W_ZLIB]], [[JZlib.W_GZIP]], or [[JZlib.W_NONE]]. [[JZlib.W_ANY]] is invalid for
    *   compression and causes [[JZlib.Z_STREAM_ERROR]].
@@ -170,18 +170,18 @@ final class Deflater extends ZStream with AutoCloseable {
     this()
     val ret = init(level, bits, memlevel, wrapperType)
     if (ret != Z_OK)
-      throw new GZIPException(ret + ": " + msg)
+      throw new GZIPException(s"$ret: $msg")
   }
 
   /**
    * Creates a `Deflater` with the given level, window bits, and memory level.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param bits
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @param memlevel
-   *   memory level (1–9)
+   *   memory level (1-9)
    * @throws GZIPException
    *   if initialization fails
    */
@@ -189,14 +189,14 @@ final class Deflater extends ZStream with AutoCloseable {
     this()
     val ret = init(level, bits, memlevel)
     if (ret != Z_OK)
-      throw new GZIPException(ret + ": " + msg)
+      throw new GZIPException(s"$ret: $msg")
   }
 
   /**
    * Initializes with the given compression level using default window bits.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @return
    *   [[JZlib.Z_OK]] on success
    */
@@ -207,7 +207,7 @@ final class Deflater extends ZStream with AutoCloseable {
    * Initializes with the given compression level and raw-deflate flag.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param nowrap
    *   if `true`, raw deflate (no header/trailer)
    * @return
@@ -220,9 +220,9 @@ final class Deflater extends ZStream with AutoCloseable {
    * Initializes with the given compression level and window bits.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param bits
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @return
    *   [[JZlib.Z_OK]] on success
    */
@@ -233,11 +233,11 @@ final class Deflater extends ZStream with AutoCloseable {
    * Initializes with full control over parameters including wrapper type.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param bits
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @param memlevel
-   *   memory level (1–9)
+   *   memory level (1-9)
    * @param wrapperType
    *   output format: [[JZlib.W_ZLIB]], [[JZlib.W_GZIP]], or [[JZlib.W_NONE]]
    * @return
@@ -262,11 +262,11 @@ final class Deflater extends ZStream with AutoCloseable {
    * Core initializer used by all other `init` overloads.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param bits
    *   window size in bits; negative values mean raw deflate, values above 15 enable GZIP wrapping
    * @param memlevel
-   *   memory level (1–9)
+   *   memory level (1-9)
    * @return
    *   [[JZlib.Z_OK]] on success
    */
@@ -280,9 +280,9 @@ final class Deflater extends ZStream with AutoCloseable {
    * Initializes with the given level, window bits, and raw-deflate flag.
    *
    * @param level
-   *   compression level (0–9 or -1)
+   *   compression level (0-9 or -1)
    * @param bits
-   *   window size in bits (9–15)
+   *   window size in bits (9-15)
    * @param nowrap
    *   if `true`, produces raw deflate output
    * @return
@@ -308,7 +308,7 @@ final class Deflater extends ZStream with AutoCloseable {
    */
   override def deflate(flush: Int): Int = {
     if (dstate == null) {
-      msg = "deflate: not initialized — call init() before deflate()"
+      msg = "deflate: not initialized - call init() before deflate()"
       return Z_STREAM_ERROR
     }
     val ret = dstate.deflate(flush)
@@ -344,7 +344,7 @@ final class Deflater extends ZStream with AutoCloseable {
    * This can be used, for example, to switch between [[JZlib.Z_DEFAULT_STRATEGY]] and [[JZlib.Z_FILTERED]] mid-stream.
    *
    * @param level
-   *   new compression level (0–9 or -1)
+   *   new compression level (0-9 or -1)
    * @param strategy
    *   new strategy: [[JZlib.Z_DEFAULT_STRATEGY]], [[JZlib.Z_FILTERED]], or [[JZlib.Z_HUFFMAN_ONLY]]
    * @return
@@ -443,7 +443,7 @@ final class Deflater extends ZStream with AutoCloseable {
   /**
    * Closes this deflater and releases all resources.
    *
-   * Equivalent to calling [[end]]. This method is idempotent — calling it multiple times is safe. It never throws an
+   * Equivalent to calling [[end]]. This method is idempotent - calling it multiple times is safe. It never throws an
    * exception, making it suitable for use in `scala.util.Using` or try-with-resources blocks.
    */
   override def close(): Unit = end()
