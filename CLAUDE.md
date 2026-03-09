@@ -19,8 +19,11 @@ scala-zlib is a pure Scala port of [jzlib](https://github.com/jruby/jzlib), a Ja
 
 ```
 scala-zlib/
-├── core/    All classes — algorithm + stream wrappers — JVM, JS, Native, WASM
-└── jvm/     Test-only — JVM interop tests (compares with java.util.zip)
+├── core/      All classes — algorithm + stream wrappers — JVM, JS, Native, WASM
+├── jvm/       Test-only — JVM interop tests (compares with java.util.zip)
+├── gzip/      CLI gzip compressor (JVM) — com.jcraft.jzlib.cli.GzipMain
+├── gunzip/    CLI gunzip decompressor (JVM) — com.jcraft.jzlib.cli.GunzipMain
+└── pigz/      CLI parallel gzip compressor (JVM) — com.jcraft.jzlib.cli.PigzMain
 ```
 
 ### Package: `com.jcraft.jzlib`
@@ -53,6 +56,9 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 | `GZIPInputStream` | core | GZIP-format `InflaterInputStream` — supports concatenated/multi-member streams |
 | `ZOutputStream` | core | Legacy compressing stream — **deprecated** |
 | `ZInputStream` | core | Legacy decompressing stream — **deprecated** |
+| `GzipMain` | gzip | CLI gzip compressor — GNU gzip-compatible, all standard flags |
+| `GunzipMain` | gunzip | CLI gunzip decompressor — GNU gunzip-compatible, all standard flags |
+| `PigzMain` | pigz | CLI parallel gzip compressor — multi-threaded block compression |
 
 ## Build System: Mill 1.1.2
 
@@ -65,6 +71,12 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 | `coreNative` | Scala Native | All classes — algorithm + stream wrappers (Native build) |
 | `coreWASM` | WASM | All classes — algorithm + stream wrappers (WASM build, experimental) |
 | `jvm` | JVM | Test-only — JVM interop tests (compares with java.util.zip) |
+| `gzip` | JVM | CLI gzip compressor (JVM) |
+| `gunzip` | JVM | CLI gunzip decompressor (JVM) |
+| `pigz` | JVM | CLI parallel gzip compressor (JVM) |
+| `gzipNative` | Scala Native | CLI gzip compressor (native binary) |
+| `gunzipNative` | Scala Native | CLI gunzip decompressor (native binary) |
+| `pigzNative` | Scala Native | CLI parallel gzip compressor (native binary) |
 
 ### Common Commands
 
@@ -97,6 +109,17 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 # ── Format ───────────────────────────────────────────────────────────────────
 ./mill mill.scalalib.scalafmt.ScalafmtModule/reformatAll __.sources
 ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+
+# ── CLI Tools ────────────────────────────────────────────────────────────────
+./mill gzip.compile                          # Compile gzip CLI (JVM)
+./mill gunzip.compile                        # Compile gunzip CLI (JVM)
+./mill pigz.compile                          # Compile pigz CLI (JVM)
+./mill gzip.run -- -kv file.txt              # Run gzip CLI on JVM
+./mill gunzip.run -- file.txt.gz             # Run gunzip CLI on JVM
+./mill pigz.run -- -p 4 file.txt             # Run pigz CLI on JVM (4 threads)
+./mill gzipNative[2.13.16].nativeLink        # Build native gzip binary
+./mill gunzipNative[2.13.16].nativeLink      # Build native gunzip binary
+./mill pigzNative[2.13.16].nativeLink        # Build native pigz binary
 ```
 
 ## Upstream Projects
@@ -376,6 +399,9 @@ When porting an upstream jzlib commit or adding a feature:
 | Input stream | `core/src/com/jcraft/jzlib/InflaterInputStream.scala` |
 | GZIP output | `core/src/com/jcraft/jzlib/GZIPOutputStream.scala` |
 | GZIP input | `core/src/com/jcraft/jzlib/GZIPInputStream.scala` |
+| CLI gzip compressor | `gzip/src/com/jcraft/jzlib/cli/GzipMain.scala` |
+| CLI gunzip decompressor | `gunzip/src/com/jcraft/jzlib/cli/GunzipMain.scala` |
+| CLI parallel gzip (pigz) | `pigz/src/com/jcraft/jzlib/cli/PigzMain.scala` |
 | Upstream jzlib source | `references/jzlib/` (git submodule) |
 | Upstream zlib (madler) source | `references/zlib/` (git submodule) |
 | Mill build definition | `build.mill` |

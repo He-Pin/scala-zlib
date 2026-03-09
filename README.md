@@ -337,6 +337,158 @@ header.setOSAuto()  // sets OS field from system properties
 | `W_GZIP` / `GZIP` | GZIP wrapper (RFC 1952) |
 | `W_ANY` / `ANY` | Auto-detect on inflate |
 
+## CLI Tools
+
+scala-zlib includes standalone command-line tools for GZIP compression and decompression, built entirely on the pure Scala zlib implementation. These tools are GNU gzip-compatible and can run on the JVM or as native binaries (via Scala Native).
+
+### gzip — GNU gzip-compatible compressor
+
+Full-featured gzip compressor with the same flags and behavior as GNU gzip.
+
+```bash
+# Compress a file (replaces original)
+./mill gzip.run file.txt
+
+# Compress, keep original, verbose output
+./mill gzip.run -kv file.txt
+
+# Compress from stdin to stdout
+cat file.txt | ./mill gzip.run -c > file.txt.gz
+
+# Best compression
+./mill gzip.run -9 file.txt
+
+# Decompress (gzip -d)
+./mill gzip.run -d file.txt.gz
+
+# Test integrity
+./mill gzip.run -t file.txt.gz
+
+# List compressed file info
+./mill gzip.run -l file.txt.gz
+
+# Recursive directory compression
+./mill gzip.run -r directory/
+```
+
+**Supported flags:**
+
+| Flag | Long form | Description |
+|------|-----------|-------------|
+| `-1` | `--fast` | Fastest compression |
+| `-9` | `--best` | Best compression |
+| `-c` | `--stdout`, `--to-stdout` | Write to stdout, keep original |
+| `-d` | `--decompress`, `--uncompress` | Decompress |
+| `-f` | `--force` | Force overwrite of output file |
+| `-k` | `--keep` | Keep input files |
+| `-l` | `--list` | List compressed file contents |
+| `-n` | `--no-name` | Don't save/restore original name and timestamp |
+| `-N` | `--name` | Save/restore original name and timestamp (default) |
+| `-r` | `--recursive` | Operate recursively on directories |
+| `-S` | `--suffix=SUF` | Use custom suffix (default: `.gz`) |
+| `-t` | `--test` | Test compressed file integrity |
+| `-v` | `--verbose` | Verbose mode |
+| `-V` | `--version` | Display version |
+| `-h` | `--help` | Display help |
+
+### gunzip — GNU gunzip-compatible decompressor
+
+Full-featured gzip decompressor. Equivalent to `gzip -d`.
+
+```bash
+# Decompress a file (replaces .gz file)
+./mill gunzip.run file.gz
+
+# Decompress, keep original, verbose
+./mill gunzip.run -kv file.gz
+
+# Decompress to stdout
+./mill gunzip.run -c file.gz > file.txt
+
+# Test integrity
+./mill gunzip.run -t file.gz
+
+# List compressed file info
+./mill gunzip.run -l file.gz
+
+# Recursive decompression
+./mill gunzip.run -r directory/
+```
+
+**Supported flags:**
+
+| Flag | Long form | Description |
+|------|-----------|-------------|
+| `-c` | `--stdout`, `--to-stdout` | Write to stdout, keep original |
+| `-f` | `--force` | Force overwrite of output file |
+| `-k` | `--keep` | Keep input files |
+| `-l` | `--list` | List compressed file contents |
+| `-n` | `--no-name` | Don't restore original name and timestamp |
+| `-N` | `--name` | Restore original name and timestamp (default) |
+| `-q` | `--quiet` | Suppress all warnings |
+| `-r` | `--recursive` | Operate recursively on directories |
+| `-S` | `--suffix=SUF` | Use custom suffix (default: `.gz`) |
+| `-t` | `--test` | Test compressed file integrity |
+| `-v` | `--verbose` | Verbose mode |
+| `-V` | `--version` | Display version |
+| `-h` | `--help` | Display help |
+
+### pigz — Parallel GZIP compressor
+
+Parallel gzip compressor inspired by [Mark Adler's pigz](https://zlib.net/pigz/). Divides input into independent blocks and compresses them in parallel using multiple threads.
+
+```bash
+# Compress with 4 threads
+./mill pigz.run -p 4 file.txt
+
+# Compress with all available cores (default)
+./mill pigz.run file.txt
+
+# Custom block size (256 KB) and verbose output
+./mill pigz.run -b 262144 -v file.txt
+
+# Decompress
+./mill pigz.run -d file.gz
+
+# Compress from stdin
+cat file.txt | ./mill pigz.run -c > file.gz
+```
+
+**How it works:** pigz splits the input into blocks (default 128 KB), compresses each block independently as a separate GZIP member, and writes them sequentially. Since each block is a valid GZIP member per RFC 1952, the output is a concatenated GZIP stream that any standard gzip decompressor can read. The number of in-flight blocks is bounded to `processes × 2` to limit memory usage.
+
+**Supported flags:**
+
+| Flag | Long form | Description |
+|------|-----------|-------------|
+| `-1` | `--fast` | Fastest compression |
+| `-9` | `--best` | Best compression |
+| `-b N` | `--blocksize N` | Block size in bytes (default: 131072 / 128 KB) |
+| `-c` | `--stdout`, `--to-stdout` | Write to stdout, keep original |
+| `-d` | `--decompress`, `--uncompress` | Decompress |
+| `-f` | `--force` | Force overwrite |
+| `-i` | `--independent` | Compress blocks independently (default) |
+| `-k` | `--keep` | Keep input files |
+| `-l` | `--list` | List compressed file contents |
+| `-p N` | `--processes N` | Number of compression threads (default: CPU count) |
+| `-r` | `--recursive` | Operate recursively on directories |
+| `-S` | `--suffix=SUF` | Use custom suffix (default: `.gz`) |
+| `-t` | `--test` | Test compressed file integrity |
+| `-v` | `--verbose` | Verbose mode |
+| `-V` | `--version` | Display version |
+| `-h` | `--help` | Display help |
+
+### Building Native Binaries
+
+All CLI tools can be compiled to native binaries via Scala Native — no JVM required at runtime:
+
+```bash
+./mill gzipNative[2.13.16].nativeLink     # produces native gzip binary
+./mill gunzipNative[2.13.16].nativeLink   # produces native gunzip binary
+./mill pigzNative[2.13.16].nativeLink     # produces native pigz binary
+```
+
+Pre-built native binaries are available as GitHub Release assets.
+
 ## Development
 
 ### Prerequisites

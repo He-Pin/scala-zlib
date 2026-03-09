@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `gzip` CLI tool module — full GNU gzip-compatible compressor with all standard flags (-1 through -9, -k, -f, -r, -v, -t, -l, -c, -d, -n, -N, -S, --fast, --best)
+- `gunzip` CLI tool module — full GNU gunzip-compatible decompressor with all standard flags
+- `pigz` CLI tool module — parallel GZIP compressor inspired by Mark Adler's pigz, with configurable thread count (-p) and block size (-b)
+- Scala Native binary builds for all CLI tools (`gzipNative`, `gunzipNative`, `pigzNative`)
+- Native binary uploads in release workflow — pre-built binaries available as GitHub Release assets
 - `JZlib.version()` now returns `"1.1.5"` — synced with upstream jzlib version
 - `GZIPHeader.setOSAuto()` — auto-detects OS from system properties; `GZIPHeader` companion object with `detectOS()` factory method
 - `JZlib.gzip()` / `JZlib.gunzip()` — one-shot GZIP compression and decompression utilities
