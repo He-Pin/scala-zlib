@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+
+### Fixed
+
+### Changed
+
+## [0.0.3] - 2026-03-09
+
+### Added
 - `gzip` CLI tool module — full GNU gzip-compatible compressor with all standard flags (-1 through -9, -k, -f, -r, -v, -t, -l, -c, -d, -n, -N, -S, --fast, --best)
 - `gunzip` CLI tool module — full GNU gunzip-compatible decompressor with all standard flags
 - `pigz` CLI tool module — parallel GZIP compressor inspired by Mark Adler's pigz, with configurable thread count (-p) and block size (-b)
