@@ -523,12 +523,12 @@ object GzipMain {
   }
 
   private def isTerminal(out: OutputStream): Boolean = {
-    // Heuristic: System.console() is non-null when stdout is a terminal
-    try {
-      System.console() != null
-    } catch {
-      case _: Exception => false
-    }
+    // Cross-platform heuristic: detect if stdout is connected to a terminal.
+    // We avoid System.console() since java.io.Console is unavailable on Scala Native.
+    // Instead, check the TERM environment variable as a portable heuristic.
+    if (!(out eq System.out)) return false
+    val term = System.getenv("TERM")
+    term != null && term.nonEmpty
   }
 
   // --- Help and version ---

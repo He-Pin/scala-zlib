@@ -43,7 +43,9 @@ trait ZlibModule extends ScalaModule with ScalafmtModule with PublishModule {
   }
 }
 
-/** Cross-platform zlib module — algorithms and stream wrappers for JVM, JS, Native, and WASM. */
+/** Cross-platform zlib module — algorithms and stream wrappers for JVM, JS, Native, and WASM.
+  * All platform modules (core, coreNative, coreJS, coreWASM) share `core/src` as their source directory.
+  */
 trait CoreModule extends ZlibModule {
   def artifactName = "scala-zlib-core"
 
@@ -103,6 +105,7 @@ trait GzipNativeModule extends CrossScalaModule with ZlibModule with ScalaNative
   def scalaNativeVersion = "0.5.10"
   def moduleDeps = Seq(coreNative(crossScalaVersion))
   def mainClass = Some("com.jcraft.jzlib.cli.GzipMain")
+  def sources = gzip.sources
 }
 
 object gunzip extends ScalaModule with ZlibModule {
@@ -116,6 +119,7 @@ trait GunzipNativeModule extends CrossScalaModule with ZlibModule with ScalaNati
   def scalaNativeVersion = "0.5.10"
   def moduleDeps = Seq(coreNative(crossScalaVersion))
   def mainClass = Some("com.jcraft.jzlib.cli.GunzipMain")
+  def sources = gunzip.sources
 }
 
 object pigz extends ScalaModule with ZlibModule {
@@ -129,6 +133,7 @@ trait PigzNativeModule extends CrossScalaModule with ZlibModule with ScalaNative
   def scalaNativeVersion = "0.5.10"
   def moduleDeps = Seq(coreNative(crossScalaVersion))
   def mainClass = Some("com.jcraft.jzlib.cli.PigzMain")
+  def sources = pigz.sources
 }
 
 // ─── Scala.js ───────────────────────────────────────────────────────────────
@@ -136,6 +141,7 @@ trait PigzNativeModule extends CrossScalaModule with ZlibModule with ScalaNative
 object coreJS extends Cross[CoreJsModule](scalaVersions)
 trait CoreJsModule extends CrossScalaModule with CoreModule with ScalaJSModule {
   def scalaJSVersion = "1.20.0"
+  override def sources = core(crossScalaVersion).sources
   object test extends ScalaJSTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::1.0.3")
   }
@@ -149,6 +155,7 @@ trait CoreWasmModule extends CrossScalaModule with CoreModule with ScalaJSModule
   override def moduleKind = ModuleKind.ESModule
   override def moduleSplitStyle = ModuleSplitStyle.FewestModules
   override def scalaJSExperimentalUseWebAssembly = true
+  override def sources = core(crossScalaVersion).sources
   object test extends ScalaJSTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::1.0.3")
   }
@@ -159,6 +166,7 @@ trait CoreWasmModule extends CrossScalaModule with CoreModule with ScalaJSModule
 object coreNative extends Cross[CoreNativeModule](scalaVersions)
 trait CoreNativeModule extends CrossScalaModule with CoreModule with ScalaNativeModule {
   def scalaNativeVersion = "0.5.10"
+  override def sources = core(crossScalaVersion).sources
   object test extends ScalaNativeTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::1.0.3")
   }
