@@ -524,6 +524,49 @@ Pre-built native binaries are available as GitHub Release assets.
 ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
 ```
 
+## Release & Publishing
+
+### Release Process
+
+1. **Maven Central Publishing** — Automatic when a GitHub Release is created
+2. **GitHub Release Assets** — JARs + native CLI binaries uploaded automatically
+3. **Native Binary Platforms** — Linux x86_64, macOS aarch64, Windows x86_64
+
+### How to Create a Release
+
+```bash
+# Tag a version
+git tag v1.1.5
+git push origin v1.1.5
+
+# Then create a GitHub Release from the tag in the GitHub UI
+# The release workflow will automatically:
+# 1. Run all tests
+# 2. Publish to Maven Central
+# 3. Build native CLI binaries for Linux, macOS, Windows
+# 4. Upload all artifacts to the GitHub Release
+```
+
+### Release Artifacts
+
+| Artifact | Description |
+|----------|-------------|
+| `scala-zlib_2.13-1.1.5.jar` | Core library for Scala 2.13 |
+| `scala-zlib_3-1.1.5.jar` | Core library for Scala 3 |
+| `gzip-linux-x86_64` | Native gzip binary for Linux |
+| `gzip-macos-aarch64` | Native gzip binary for macOS ARM |
+| `gzip-windows-x86_64.exe` | Native gzip binary for Windows |
+| (same pattern for gunzip and pigz) | |
+
+### Using in Your Project
+
+```scala
+// In your build.mill
+def ivyDeps = Agg(
+  ivy"com.github.scala-zlib::scala-zlib::1.1.5"
+)
+```
+
 ## Migration from Deprecated APIs
 
 ### ZStream → Deflater / Inflater

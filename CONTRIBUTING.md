@@ -368,6 +368,38 @@ test("GZIPInputStream reads concatenated gzip streams") { ... }
 - Algorithm changes (in `Deflate`, `Inflate`, etc.) should include a round-trip test.
 - Bug fixes must include a regression test.
 
+### CLI Tools Development
+
+The `gzip`, `gunzip`, and `pigz` modules provide standalone command-line tools built on the core library.
+
+#### Build
+
+```bash
+./mill gzip.compile                        # Compile gzip CLI (JVM)
+./mill gunzip.compile                      # Compile gunzip CLI (JVM)
+./mill pigz.compile                        # Compile pigz CLI (JVM)
+```
+
+#### Run
+
+```bash
+./mill gzip.run file.txt                   # Run gzip on a file
+./mill gunzip.run file.txt.gz              # Run gunzip on a file
+./mill pigz.run -p 4 file.txt             # Run pigz with 4 threads
+```
+
+#### Build Native Binaries
+
+Native binaries are built via Scala Native — no JVM required at runtime:
+
+```bash
+./mill gzipNative[2.13.16].nativeLink      # Native gzip binary
+./mill gunzipNative[2.13.16].nativeLink    # Native gunzip binary
+./mill pigzNative[2.13.16].nativeLink      # Native pigz binary
+```
+
+> **Note:** The CLI modules do not have test suites yet. Contributions adding tests are welcome.
+
 ## Pull Request Review
 
 Before your PR can be merged it must:
