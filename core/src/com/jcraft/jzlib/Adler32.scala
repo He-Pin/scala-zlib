@@ -54,7 +54,14 @@ final class Adler32 extends Checksum {
   private var s1: Long = 1L
   private var s2: Long = 0L
 
-  /** Resets the checksum to a specific initial value. */
+  /**
+   * Resets the checksum to a specific initial value.
+   *
+   * The low 16 bits of `init` become `s1` and the high 16 bits become `s2`.
+   *
+   * @param init
+   *   the initial checksum value (Adler-32 encoded)
+   */
   def reset(init: Long): Unit = {
     s1 = init & 0xffffL
     s2 = (init >> 16) & 0xffffL
@@ -66,16 +73,37 @@ final class Adler32 extends Checksum {
     s2 = 0L
   }
 
-  /** Returns the current Adler-32 checksum value. */
+  /**
+   * Returns the current Adler-32 checksum value.
+   *
+   * @return
+   *   the checksum as a `Long` with `s1` in the low 16 bits and `s2` in the high 16 bits
+   */
   def getValue: Long = (s2 << 16) | s1
 
-  /** Updates the Adler-32 checksum with a single byte. */
+  /**
+   * Updates the Adler-32 checksum with a single byte.
+   *
+   * Only the low 8 bits of `b` are used.
+   *
+   * @param b
+   *   the byte value (only the low 8 bits are used)
+   */
   override def update(b: Int): Unit = {
     s1 = (s1 + (b & 0xff)) % BASE
     s2 = (s2 + s1)         % BASE
   }
 
-  /** Updates the checksum with the specified bytes from `buf`. */
+  /**
+   * Updates the checksum with the specified bytes from `buf`.
+   *
+   * @param buf
+   *   the byte array containing the data
+   * @param index
+   *   the start offset within `buf`
+   * @param len
+   *   the number of bytes to process
+   */
   def update(buf: Array[Byte], index: Int, len: Int): Unit = {
     var i   = index
     var rem = len
@@ -110,7 +138,15 @@ final class Adler32 extends Checksum {
     s2 %= BASE
   }
 
-  /** Creates an independent copy of this checksum. */
+  /**
+   * Creates an independent copy of this checksum.
+   *
+   * The returned instance has the same internal state but is fully independent — updating one will not affect the
+   * other.
+   *
+   * @return
+   *   a new [[Adler32]] with the same checksum state
+   */
   def copy(): Adler32 = {
     val foo = new Adler32
     foo.s1 = s1

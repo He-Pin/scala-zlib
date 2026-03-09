@@ -63,22 +63,56 @@ package com.jcraft.jzlib
 class GZIPHeader extends Cloneable {
   import GZIPHeader._
 
-  var text: Boolean        = false
-  var fhcrc: Boolean       = false
-  var xflags: Int          = 0
-  var os: Int              = 255
-  var extra: Array[Byte]   = null
-  var name: Array[Byte]    = null
-  var comment: Array[Byte] = null
-  var hcrc: Int            = 0
-  var crc: Long            = 0L
-  var done: Boolean        = false
-  var mtime: Long          = 0L
+  /** Whether the data is probably ASCII/text (`FTEXT` flag, RFC 1952 §2.3.1). */
+  var text: Boolean = false
 
-  /** Sets the file modification time (Unix timestamp in seconds). */
+  /** Whether the header includes a CRC-16 (`FHCRC` flag, RFC 1952 §2.3.1). */
+  var fhcrc: Boolean = false
+
+  /** Extra flags byte (`XFL`): encodes compression level hints. */
+  var xflags: Int = 0
+
+  /**
+   * Operating system on which the file was compressed (see [[GZIPHeader$]] for `OS_*` constants). Defaults to 255
+   * ([[GZIPHeader.OS_UNKNOWN]]).
+   */
+  var os: Int = 255
+
+  /** Optional extra field data (`FEXTRA`), or `null` if not present. */
+  var extra: Array[Byte] = null
+
+  /** Original file name as raw ISO-8859-1 bytes (`FNAME`), or `null` if not set. */
+  var name: Array[Byte] = null
+
+  /** Comment as raw ISO-8859-1 bytes (`FCOMMENT`), or `null` if not set. */
+  var comment: Array[Byte] = null
+
+  /** Header CRC-16 value (low 16 bits of CRC-32 over the header bytes). */
+  var hcrc: Int = 0
+
+  /** CRC-32 of the uncompressed data, stored in the GZIP trailer. */
+  var crc: Long = 0L
+
+  /** Whether the header has been fully parsed (used internally during inflation). */
+  var done: Boolean = false
+
+  /** File modification time as a Unix timestamp in seconds since the epoch. */
+  var mtime: Long = 0L
+
+  /**
+   * Sets the file modification time (Unix timestamp in seconds).
+   *
+   * @param mtime
+   *   the modification time as seconds since the Unix epoch
+   */
   def setModifiedTime(mtime: Long): Unit = this.mtime = mtime
 
-  /** Returns the file modification time (Unix timestamp in seconds). */
+  /**
+   * Returns the file modification time (Unix timestamp in seconds).
+   *
+   * @return
+   *   the modification time, or 0 if not set
+   */
   def getModifiedTime: Long = mtime
 
   /**
@@ -97,7 +131,12 @@ class GZIPHeader extends Cloneable {
     else throw new IllegalArgumentException("os: " + os)
   }
 
-  /** Returns the OS identifier. */
+  /**
+   * Returns the OS identifier.
+   *
+   * @return
+   *   the OS byte value (see [[GZIPHeader$]] for `OS_*` constants)
+   */
   def getOS: Int = os
 
   /**
@@ -121,7 +160,12 @@ class GZIPHeader extends Cloneable {
     this.name = name.getBytes("ISO-8859-1")
   }
 
-  /** Returns the original file name, or an empty string if not set. */
+  /**
+   * Returns the original file name, or an empty string if not set.
+   *
+   * @return
+   *   the file name decoded from ISO-8859-1, or `""` if not set
+   */
   def getName: String = {
     if (this.name == null) return ""
     new String(this.name, "ISO-8859-1")
@@ -137,7 +181,12 @@ class GZIPHeader extends Cloneable {
     this.comment = comment.getBytes("ISO-8859-1")
   }
 
-  /** Returns the comment, or an empty string if not set. */
+  /**
+   * Returns the comment, or an empty string if not set.
+   *
+   * @return
+   *   the comment decoded from ISO-8859-1, or `""` if not set
+   */
   def getComment: String = {
     if (this.comment == null) return ""
     new String(this.comment, "ISO-8859-1")
@@ -151,7 +200,12 @@ class GZIPHeader extends Cloneable {
    */
   def setCRC(crc: Long): Unit = this.crc = crc
 
-  /** Returns the CRC-32 value. */
+  /**
+   * Returns the CRC-32 value.
+   *
+   * @return
+   *   the CRC-32 of the uncompressed data
+   */
   def getCRC: Long = crc
 
   private[jzlib] def put(d: Deflate): Unit = {
@@ -191,6 +245,15 @@ class GZIPHeader extends Cloneable {
     }
   }
 
+  /**
+   * Creates a deep copy of this GZIP header.
+   *
+   * Byte array fields (`extra`, `name`, `comment`) are independently copied so modifications to the clone do not affect
+   * the original.
+   *
+   * @return
+   *   a new [[GZIPHeader]] with the same metadata
+   */
   override def clone(): GZIPHeader = {
     val gheader = super.clone().asInstanceOf[GZIPHeader]
     if (gheader.extra != null) {
@@ -212,22 +275,56 @@ class GZIPHeader extends Cloneable {
   }
 }
 
-/** OS identifier constants for [[GZIPHeader]] as defined in RFC 1952. */
+/**
+ * OS identifier constants for [[GZIPHeader]] as defined in RFC 1952.
+ *
+ * Also provides [[detectOS]] for automatic OS detection.
+ */
 object GZIPHeader {
-  final val OS_MSDOS: Byte   = 0x00.toByte
-  final val OS_AMIGA: Byte   = 0x01.toByte
-  final val OS_VMS: Byte     = 0x02.toByte
-  final val OS_UNIX: Byte    = 0x03.toByte
-  final val OS_ATARI: Byte   = 0x05.toByte
-  final val OS_OS2: Byte     = 0x06.toByte
-  final val OS_MACOS: Byte   = 0x07.toByte
-  final val OS_TOPS20: Byte  = 0x0a.toByte
-  final val OS_WIN32: Byte   = 0x0b.toByte
-  final val OS_VMCMS: Byte   = 0x04.toByte
+
+  /** FAT filesystem (MS-DOS, OS/2, NT/Win32). */
+  final val OS_MSDOS: Byte = 0x00.toByte
+
+  /** Amiga. */
+  final val OS_AMIGA: Byte = 0x01.toByte
+
+  /** VMS (or OpenVMS). */
+  final val OS_VMS: Byte = 0x02.toByte
+
+  /** Unix. */
+  final val OS_UNIX: Byte = 0x03.toByte
+
+  /** Atari TOS. */
+  final val OS_ATARI: Byte = 0x05.toByte
+
+  /** HPFS filesystem (OS/2). */
+  final val OS_OS2: Byte = 0x06.toByte
+
+  /** Macintosh (classic Mac OS or macOS). */
+  final val OS_MACOS: Byte = 0x07.toByte
+
+  /** TOPS-20. */
+  final val OS_TOPS20: Byte = 0x0a.toByte
+
+  /** NTFS filesystem (Windows NT). */
+  final val OS_WIN32: Byte = 0x0b.toByte
+
+  /** VM/CMS. */
+  final val OS_VMCMS: Byte = 0x04.toByte
+
+  /** Z-System. */
   final val OS_ZSYSTEM: Byte = 0x08.toByte
-  final val OS_CPM: Byte     = 0x09.toByte
-  final val OS_QDOS: Byte    = 0x0c.toByte
-  final val OS_RISCOS: Byte  = 0x0d.toByte
+
+  /** CP/M. */
+  final val OS_CPM: Byte = 0x09.toByte
+
+  /** QDOS. */
+  final val OS_QDOS: Byte = 0x0c.toByte
+
+  /** Acorn RISCOS. */
+  final val OS_RISCOS: Byte = 0x0d.toByte
+
+  /** Unknown operating system (default). */
   final val OS_UNKNOWN: Byte = 0xff.toByte
 
   /**
