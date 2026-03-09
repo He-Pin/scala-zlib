@@ -24,11 +24,12 @@ jobs:
           node-version: "22"
       - name: Install Clang/LLVM
         run: sudo apt-get update && sudo apt-get install -y clang libstdc++-12-dev
-      - name: Cache Mill
+      - name: Cache Mill & Coursier
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/mill
+            ~/.cache/coursier
             out/
           key: mill-release-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
       - name: Test all
@@ -46,11 +47,12 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - name: Cache Mill
+      - name: Cache Mill & Coursier
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/mill
+            ~/.cache/coursier
             out/
           key: mill-publish-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
       - name: Publish
@@ -91,11 +93,12 @@ jobs:
         run: |
           echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         shell: pwsh
-      - name: Cache Mill
+      - name: Cache Mill & Coursier
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/mill
+            ~/.cache/coursier
             out/
           key: mill-native-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
       - name: Build native binaries
@@ -130,11 +133,12 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - name: Cache Mill
+      - name: Cache Mill & Coursier
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/mill
+            ~/.cache/coursier
             out/
           key: mill-release-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
           restore-keys: mill-release-

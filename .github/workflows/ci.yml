@@ -183,6 +183,31 @@ jobs:
       - name: Test coreWASM
         run: ./mill coreWASM[2.13.16].test + coreWASM[3.3.7].test
 
+  # ─── CLI tools (compile only) ────────────────────────────────────────────────
+  test-cli:
+    name: Compile CLI tools
+    runs-on: ubuntu-latest
+    needs: format-check
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Cache Mill & Coursier
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/mill
+            ~/.cache/coursier
+            out/
+          key: mill-21-${{ runner.os }}-cli-${{ hashFiles('build.mill', '.mill-version') }}
+          restore-keys: mill-21-${{ runner.os }}-cli-
+      - name: Compile CLI tools
+        run: ./mill gzip.compile + gunzip.compile + pigz.compile
+
   # ─── Benchmark (compile only) ──────────────────────────────────────────────
   benchmark:
     name: Benchmark (compile)
