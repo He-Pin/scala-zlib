@@ -554,7 +554,6 @@ git push origin v1.1.5
 | `scala-zlib_2.13-1.1.5.jar` | Core library for Scala 2.13 |
 | `scala-zlib_3-1.1.5.jar` | Core library for Scala 3 |
 | `gzip-linux-x86_64` | Native gzip binary for Linux |
-| `gzip-macos-x86_64` | Native gzip binary for macOS Intel |
 | `gzip-macos-aarch64` | Native gzip binary for macOS Apple Silicon |
 | `gzip-windows-x86_64.exe` | Native gzip binary for Windows |
 | (same pattern for gunzip and pigz) | |
