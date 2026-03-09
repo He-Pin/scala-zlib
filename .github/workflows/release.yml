@@ -165,15 +165,23 @@ jobs:
           restore-keys: mill-release-
       - name: Build JARs
         run: |
-          ./mill __.jar
-          ./mill __.docJar
-          ./mill __.sourceJar
+          ./mill core[2.13.16].jar
+          ./mill core[3.3.7].jar
+          ./mill core[2.13.16].docJar
+          ./mill core[3.3.7].docJar
+          ./mill core[2.13.16].sourceJar
+          ./mill core[3.3.7].sourceJar
       - name: Collect JARs
         run: |
           mkdir -p release-artifacts
-          find out/ -name "*.jar" -path "*/dest/*" | while read jar; do
-            cp "$jar" release-artifacts/
-          done
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Copy core library JARs with proper Maven-style naming
+          cp out/core/2.13.16/jar.dest/out.jar "release-artifacts/scala-zlib_2.13-${VERSION}.jar"
+          cp out/core/3.3.7/jar.dest/out.jar "release-artifacts/scala-zlib_3-${VERSION}.jar"
+          cp out/core/2.13.16/docJar.dest/out.jar "release-artifacts/scala-zlib_2.13-${VERSION}-javadoc.jar"
+          cp out/core/3.3.7/docJar.dest/out.jar "release-artifacts/scala-zlib_3-${VERSION}-javadoc.jar"
+          cp out/core/2.13.16/sourceJar.dest/out.jar "release-artifacts/scala-zlib_2.13-${VERSION}-sources.jar"
+          cp out/core/3.3.7/sourceJar.dest/out.jar "release-artifacts/scala-zlib_3-${VERSION}-sources.jar"
           ls -la release-artifacts/
       - name: Download native binaries
         uses: actions/download-artifact@v4

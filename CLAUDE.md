@@ -78,6 +78,28 @@ The `core` module provides all classes (algorithm + stream wrappers). The `jvm` 
 | `gunzipNative` | Scala Native | CLI gunzip decompressor (native binary) |
 | `pigzNative` | Scala Native | CLI parallel gzip compressor (native binary) |
 
+### Source Sharing Architecture
+
+All platform modules share the same source code from `core/src/`:
+
+```scala
+// In build.mill — coreNative, coreJS, coreWASM all use:
+override def sources = core(crossScalaVersion).sources
+```
+
+- `core[*]` → JVM (canonical source directory: `core/src/`)
+- `coreNative[*]` → Scala Native (shares `core/src/` via `override def sources`)
+- `coreJS[*]` → Scala.js (shares `core/src/` via `override def sources`)
+- `coreWASM[*]` → WASM (shares `core/src/` via `override def sources`)
+
+Similarly, native CLI tools share their JVM counterpart's sources:
+```scala
+// gzipNative, gunzipNative, pigzNative use:
+def sources = gzip.sources  // (gunzip.sources, pigz.sources respectively)
+```
+
+**Important**: Do NOT create separate source directories like `coreNative/src/` or `coreJS/src/`. All platform modules compile from `core/src/`.
+
 ### Common Commands
 
 ```bash
@@ -222,6 +244,8 @@ Test files live in `core/test/src/` and `jvm/test/src/`. Use descriptive names:
 test("deflate and inflate with Z_DEFAULT_COMPRESSION") { ... }
 test("GZIPInputStream reads concatenated gzip streams") { ... }
 ```
+
+**Test source sharing caveat**: Test sources in `core/test/src/` use `java.util.zip.CRC32` and `java.util.zip.Adler32` for JVM interop verification. These CANNOT be shared with JS/WASM/Native test modules. Only the main library sources (`core/src/`) are shared across platforms — test sources remain JVM-only.
 
 ### Commit Format
 
