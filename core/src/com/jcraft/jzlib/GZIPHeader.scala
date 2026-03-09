@@ -167,7 +167,7 @@ class GZIPHeader extends Cloneable {
     else if (d.level == JZlib.Z_BEST_COMPRESSION) xfl |= 2
 
     d.put_short((0x8b1f & 0xffff).toShort) // ID1 ID2
-    d.put_byte(8.toByte)        // CM
+    d.put_byte(8.toByte)                   // CM
     d.put_byte(flag.toByte)
     d.put_byte(mtime.toByte)
     d.put_byte((mtime >> 8).toByte)

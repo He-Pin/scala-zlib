@@ -38,10 +38,10 @@ object Deflate {
 
   private[jzlib] class Config(
     val good_length: Int,
-    val max_lazy:    Int,
+    val max_lazy: Int,
     val nice_length: Int,
-    val max_chain:   Int,
-    val func:        Int
+    val max_chain: Int,
+    val func: Int,
   )
 
   private final val MAX_MEM_LEVEL         = 9
@@ -55,23 +55,30 @@ object Deflate {
 
   private[jzlib] val config_table: Array[Config] = {
     val t = new Array[Config](10)
-    t(0) = new Config(0,    0,    0,    0, STORED)
-    t(1) = new Config(4,    4,    8,    4, FAST)
-    t(2) = new Config(4,    5,   16,    8, FAST)
-    t(3) = new Config(4,    6,   32,   32, FAST)
-    t(4) = new Config(4,    4,   16,   16, SLOW)
-    t(5) = new Config(8,   16,   32,   32, SLOW)
-    t(6) = new Config(8,   16,  128,  128, SLOW)
-    t(7) = new Config(8,   32,  128,  256, SLOW)
-    t(8) = new Config(32, 128,  258, 1024, SLOW)
-    t(9) = new Config(32, 258,  258, 4096, SLOW)
+    t(0) = new Config(0, 0, 0, 0, STORED)
+    t(1) = new Config(4, 4, 8, 4, FAST)
+    t(2) = new Config(4, 5, 16, 8, FAST)
+    t(3) = new Config(4, 6, 32, 32, FAST)
+    t(4) = new Config(4, 4, 16, 16, SLOW)
+    t(5) = new Config(8, 16, 32, 32, SLOW)
+    t(6) = new Config(8, 16, 128, 128, SLOW)
+    t(7) = new Config(8, 32, 128, 256, SLOW)
+    t(8) = new Config(32, 128, 258, 1024, SLOW)
+    t(9) = new Config(32, 258, 258, 4096, SLOW)
     t
   }
 
   private[jzlib] val z_errmsg: Array[String] = Array(
-    "need dictionary", "stream end", "", "file error", "stream error",
-    "data error", "insufficient memory", "buffer error",
-    "incompatible version", ""
+    "need dictionary",
+    "stream end",
+    "",
+    "file error",
+    "stream error",
+    "data error",
+    "insufficient memory",
+    "buffer error",
+    "incompatible version",
+    "",
   )
 
   private final val NeedMore      = 0
@@ -92,9 +99,9 @@ object Deflate {
   private final val Z_FULL_FLUSH    = 3
   private final val Z_FINISH        = 4
 
-  private final val Z_OK            =  0
-  private final val Z_STREAM_END    =  1
-  private final val Z_NEED_DICT     =  2
+  private final val Z_OK            = 0
+  private final val Z_STREAM_END    = 1
+  private final val Z_NEED_DICT     = 2
   private final val Z_ERRNO         = -1
   private final val Z_STREAM_ERROR  = -2
   private final val Z_DATA_ERROR    = -3
@@ -102,7 +109,7 @@ object Deflate {
   private final val Z_BUF_ERROR     = -5
   private final val Z_VERSION_ERROR = -6
 
-  private final val INIT_STATE   =  42
+  private final val INIT_STATE   = 42
   private final val BUSY_STATE   = 113
   private final val FINISH_STATE = 666
 
@@ -143,21 +150,21 @@ object Deflate {
       dest.next_in = new Array[Byte](src.next_in.length)
       System.arraycopy(src.next_in, 0, dest.next_in, 0, src.next_in.length)
     }
-    dest.next_in_index  = src.next_in_index
-    dest.avail_in       = src.avail_in
-    dest.total_in       = src.total_in
+    dest.next_in_index = src.next_in_index
+    dest.avail_in = src.avail_in
+    dest.total_in = src.total_in
     if (src.next_out != null) {
       dest.next_out = new Array[Byte](src.next_out.length)
       System.arraycopy(src.next_out, 0, dest.next_out, 0, src.next_out.length)
     }
     dest.next_out_index = src.next_out_index
-    dest.avail_out      = src.avail_out
-    dest.total_out      = src.total_out
-    dest.msg            = src.msg
-    dest.data_type      = src.data_type
-    dest.adler          = src.adler.copy()
-    dest.dstate         = src.dstate.copy()
-    dest.dstate.strm    = dest
+    dest.avail_out = src.avail_out
+    dest.total_out = src.total_out
+    dest.msg = src.msg
+    dest.data_type = src.data_type
+    dest.adler = src.adler.copy()
+    dest.dstate = src.dstate.copy()
+    dest.dstate.strm = dest
     Z_OK
   }
 }
@@ -165,69 +172,69 @@ object Deflate {
 private[jzlib] final class Deflate(var strm: ZStream) {
   import Deflate._
 
-  var status:           Int         = 0
-  var pending_buf:      Array[Byte] = null
-  var pending_buf_size: Int         = 0
-  var pending_out:      Int         = 0
-  var pending:          Int         = 0
-  var wrap:             Int         = 1
-  var data_type:        Byte        = 0
-  var method:           Byte        = 0
-  var last_flush:       Int         = 0
+  var status: Int              = 0
+  var pending_buf: Array[Byte] = null
+  var pending_buf_size: Int    = 0
+  var pending_out: Int         = 0
+  var pending: Int             = 0
+  var wrap: Int                = 1
+  var data_type: Byte          = 0
+  var method: Byte             = 0
+  var last_flush: Int          = 0
 
-  var w_size:      Int         = 0
-  var w_bits:      Int         = 0
-  var w_mask:      Int         = 0
-  var window:      Array[Byte] = null
-  var window_size: Int         = 0
-  var prev:        Array[Short] = null
-  var head:        Array[Short] = null
+  var w_size: Int         = 0
+  var w_bits: Int         = 0
+  var w_mask: Int         = 0
+  var window: Array[Byte] = null
+  var window_size: Int    = 0
+  var prev: Array[Short]  = null
+  var head: Array[Short]  = null
 
-  var ins_h:      Int = 0
-  var hash_size:  Int = 0
-  var hash_bits:  Int = 0
-  var hash_mask:  Int = 0
+  var ins_h: Int      = 0
+  var hash_size: Int  = 0
+  var hash_bits: Int  = 0
+  var hash_mask: Int  = 0
   var hash_shift: Int = 0
 
-  var block_start:      Int = 0
-  var match_length:     Int = 0
-  var prev_match:       Int = 0
-  var match_available:  Int = 0
-  var strstart:         Int = 0
-  var match_start:      Int = 0
-  var lookahead:        Int = 0
-  var prev_length:      Int = 0
+  var block_start: Int      = 0
+  var match_length: Int     = 0
+  var prev_match: Int       = 0
+  var match_available: Int  = 0
+  var strstart: Int         = 0
+  var match_start: Int      = 0
+  var lookahead: Int        = 0
+  var prev_length: Int      = 0
   var max_chain_length: Int = 0
-  var max_lazy_match:   Int = 0
-  var level:            Int = 0
-  var strategy:         Int = 0
-  var good_match:       Int = 0
-  var nice_match:       Int = 0
+  var max_lazy_match: Int   = 0
+  var level: Int            = 0
+  var strategy: Int         = 0
+  var good_match: Int       = 0
+  var nice_match: Int       = 0
 
   var dyn_ltree: Array[Short] = new Array[Short](HEAP_SIZE * 2)
   var dyn_dtree: Array[Short] = new Array[Short]((2 * D_CODES + 1) * 2)
-  var bl_tree:   Array[Short] = new Array[Short]((2 * BL_CODES + 1) * 2)
+  var bl_tree: Array[Short]   = new Array[Short]((2 * BL_CODES + 1) * 2)
 
-  var l_desc:  Tree = new Tree()
-  var d_desc:  Tree = new Tree()
+  var l_desc: Tree  = new Tree()
+  var d_desc: Tree  = new Tree()
   var bl_desc: Tree = new Tree()
 
-  var bl_count:  Array[Short] = new Array[Short](MAX_BITS + 1)
+  var bl_count: Array[Short]  = new Array[Short](MAX_BITS + 1)
   var next_code: Array[Short] = new Array[Short](MAX_BITS + 1)
-  var heap:      Array[Int]   = new Array[Int](2 * L_CODES + 1)
-  var heap_len:  Int = 0
-  var heap_max:  Int = 0
-  var depth:     Array[Byte] = new Array[Byte](2 * L_CODES + 1)
-  var l_buf:     Array[Byte] = null
-  var lit_bufsize:  Int = 0
-  var last_lit:     Int = 0
-  var d_buf:        Int = 0
-  var opt_len:      Int = 0
-  var static_len:   Int = 0
-  var matches:      Int = 0
-  var last_eob_len: Int = 0
-  var bi_buf:   Short = 0
-  var bi_valid: Int   = 0
+  var heap: Array[Int]        = new Array[Int](2 * L_CODES + 1)
+  var heap_len: Int           = 0
+  var heap_max: Int           = 0
+  var depth: Array[Byte]      = new Array[Byte](2 * L_CODES + 1)
+  var l_buf: Array[Byte]      = null
+  var lit_bufsize: Int        = 0
+  var last_lit: Int           = 0
+  var d_buf: Int              = 0
+  var opt_len: Int            = 0
+  var static_len: Int         = 0
+  var matches: Int            = 0
+  var last_eob_len: Int       = 0
+  var bi_buf: Short           = 0
+  var bi_valid: Int           = 0
 
   var gheader: GZIPHeader = null
 
@@ -236,50 +243,50 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     head(hash_size - 1) = 0
     var i = 0
     while (i < hash_size - 1) { head(i) = 0; i += 1 }
-    max_lazy_match   = config_table(level).max_lazy
-    good_match       = config_table(level).good_length
-    nice_match       = config_table(level).nice_length
+    max_lazy_match = config_table(level).max_lazy
+    good_match = config_table(level).good_length
+    nice_match = config_table(level).nice_length
     max_chain_length = config_table(level).max_chain
-    strstart         = 0
-    block_start      = 0
-    lookahead        = 0
-    match_length     = MIN_MATCH - 1
-    prev_length      = MIN_MATCH - 1
-    match_available  = 0
-    ins_h            = 0
+    strstart = 0
+    block_start = 0
+    lookahead = 0
+    match_length = MIN_MATCH - 1
+    prev_length = MIN_MATCH - 1
+    match_available = 0
+    ins_h = 0
   }
 
   private[jzlib] def tr_init(): Unit = {
-    l_desc.dyn_tree   = dyn_ltree
-    l_desc.stat_desc  = StaticTree.static_l_desc
-    d_desc.dyn_tree   = dyn_dtree
-    d_desc.stat_desc  = StaticTree.static_d_desc
-    bl_desc.dyn_tree  = bl_tree
+    l_desc.dyn_tree = dyn_ltree
+    l_desc.stat_desc = StaticTree.static_l_desc
+    d_desc.dyn_tree = dyn_dtree
+    d_desc.stat_desc = StaticTree.static_d_desc
+    bl_desc.dyn_tree = bl_tree
     bl_desc.stat_desc = StaticTree.static_bl_desc
-    bi_buf       = 0
-    bi_valid     = 0
+    bi_buf = 0
+    bi_valid = 0
     last_eob_len = 8
     init_block()
   }
 
   private[jzlib] def init_block(): Unit = {
     var i = 0
-    while (i < L_CODES)  { dyn_ltree(i * 2) = 0; i += 1 }
+    while (i < L_CODES) { dyn_ltree(i * 2) = 0; i += 1 }
     i = 0
-    while (i < D_CODES)  { dyn_dtree(i * 2) = 0; i += 1 }
+    while (i < D_CODES) { dyn_dtree(i * 2) = 0; i += 1 }
     i = 0
     while (i < BL_CODES) { bl_tree(i * 2) = 0; i += 1 }
     dyn_ltree(END_BLOCK * 2) = 1
-    opt_len    = 0
+    opt_len = 0
     static_len = 0
-    last_lit   = 0
-    matches    = 0
+    last_lit = 0
+    matches = 0
   }
 
   private[jzlib] def pqdownheap(tree: Array[Short], k: Int): Unit = {
-    val v = heap(k)
-    var kk = k
-    var j  = k << 1
+    val v    = heap(k)
+    var kk   = k
+    var j    = k << 1
     var loop = true
     while (j <= heap_len && loop) {
       if (j < heap_len && smaller(tree, heap(j + 1), heap(j), depth)) j += 1
@@ -313,13 +320,12 @@ private[jzlib] final class Deflate(var strm: ZStream) {
         else if (curlen != 0) {
           if (curlen != prevlen) bl_tree(curlen * 2) = (bl_tree(curlen * 2) + 1).toShort
           bl_tree(REP_3_6 * 2) = (bl_tree(REP_3_6 * 2) + 1).toShort
-        }
-        else if (count <= 10) { bl_tree(REPZ_3_10 * 2) = (bl_tree(REPZ_3_10 * 2) + 1).toShort }
+        } else if (count <= 10) { bl_tree(REPZ_3_10 * 2) = (bl_tree(REPZ_3_10 * 2) + 1).toShort }
         else { bl_tree(REPZ_11_138 * 2) = (bl_tree(REPZ_11_138 * 2) + 1).toShort }
         count = 0; prevlen = curlen
-        if (nextlen == 0)       { max_count = 138; min_count = 3 }
-        else if (curlen == nextlen) { max_count = 6;   min_count = 3 }
-        else                    { max_count = 7;   min_count = 4 }
+        if (nextlen == 0) { max_count = 138; min_count = 3 }
+        else if (curlen == nextlen) { max_count = 6; min_count = 3 }
+        else { max_count = 7; min_count = 4 }
       }
       n += 1
     }
@@ -340,8 +346,8 @@ private[jzlib] final class Deflate(var strm: ZStream) {
   private[jzlib] def send_all_trees(lcodes: Int, dcodes: Int, blcodes: Int): Unit = {
     var rank = 0
     send_bits(lcodes - 257, 5)
-    send_bits(dcodes - 1,   5)
-    send_bits(blcodes - 4,  4)
+    send_bits(dcodes - 1, 5)
+    send_bits(blcodes - 4, 4)
     while (rank < blcodes) {
       send_bits(bl_tree((Tree.bl_order(rank) & 0xff) * 2 + 1), 3)
       rank += 1
@@ -365,31 +371,38 @@ private[jzlib] final class Deflate(var strm: ZStream) {
       if (count < max_count && curlen == nextlen) {
         // continue: skip processing and reset
       } else if (count < min_count) {
-        do { send_code(curlen, bl_tree); count -= 1 } while (count != 0)
+        ;
+        {
+          var continueLoop_12724 = true;
+          while (continueLoop_12724) {
+            send_code(curlen, bl_tree); count -= 1
+            continueLoop_12724 = count != 0
+          }
+        }
         count = 0; prevlen = curlen
-        if (nextlen == 0)           { max_count = 138; min_count = 3 }
-        else if (curlen == nextlen) { max_count = 6;   min_count = 3 }
-        else                        { max_count = 7;   min_count = 4 }
+        if (nextlen == 0) { max_count = 138; min_count = 3 }
+        else if (curlen == nextlen) { max_count = 6; min_count = 3 }
+        else { max_count = 7; min_count = 4 }
       } else if (curlen != 0) {
         if (curlen != prevlen) { send_code(curlen, bl_tree); count -= 1 }
         send_code(REP_3_6, bl_tree)
         send_bits(count - 3, 2)
         count = 0; prevlen = curlen
-        if (nextlen == 0)           { max_count = 138; min_count = 3 }
-        else if (curlen == nextlen) { max_count = 6;   min_count = 3 }
-        else                        { max_count = 7;   min_count = 4 }
+        if (nextlen == 0) { max_count = 138; min_count = 3 }
+        else if (curlen == nextlen) { max_count = 6; min_count = 3 }
+        else { max_count = 7; min_count = 4 }
       } else if (count <= 10) {
         send_code(REPZ_3_10, bl_tree); send_bits(count - 3, 3)
         count = 0; prevlen = curlen
-        if (nextlen == 0)           { max_count = 138; min_count = 3 }
-        else if (curlen == nextlen) { max_count = 6;   min_count = 3 }
-        else                        { max_count = 7;   min_count = 4 }
+        if (nextlen == 0) { max_count = 138; min_count = 3 }
+        else if (curlen == nextlen) { max_count = 6; min_count = 3 }
+        else { max_count = 7; min_count = 4 }
       } else {
         send_code(REPZ_11_138, bl_tree); send_bits(count - 11, 7)
         count = 0; prevlen = curlen
-        if (nextlen == 0)           { max_count = 138; min_count = 3 }
-        else if (curlen == nextlen) { max_count = 6;   min_count = 3 }
-        else                        { max_count = 7;   min_count = 4 }
+        if (nextlen == 0) { max_count = 138; min_count = 3 }
+        else if (curlen == nextlen) { max_count = 6; min_count = 3 }
+        else { max_count = 7; min_count = 4 }
       }
       n += 1
     }
@@ -399,12 +412,12 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     System.arraycopy(p, start, pending_buf, pending, len)
     pending += len
   }
-  @inline final private[jzlib] def put_byte(c: Byte): Unit = { pending_buf(pending) = c; pending += 1 }
-  @inline final private[jzlib] def put_short(w: Int): Unit = {
+  @inline final private[jzlib] def put_byte(c: Byte): Unit                      = { pending_buf(pending) = c; pending += 1 }
+  @inline final private[jzlib] def put_short(w: Int): Unit                      = {
     put_byte(w.toByte)
     put_byte((w >>> 8).toByte)
   }
-  final private[jzlib] def putShortMSB(b: Int): Unit = {
+  final private[jzlib] def putShortMSB(b: Int): Unit                            = {
     put_byte((b >> 8).toByte)
     put_byte(b.toByte)
   }
@@ -441,7 +454,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
   }
 
   private[jzlib] def _tr_tally(dist: Int, lc: Int): Boolean = {
-    pending_buf(d_buf + last_lit * 2)     = (dist >>> 8).toByte
+    pending_buf(d_buf + last_lit * 2) = (dist >>> 8).toByte
     pending_buf(d_buf + last_lit * 2 + 1) = dist.toByte
     l_buf(last_lit) = lc.toByte; last_lit += 1
     if (dist == 0) {
@@ -474,29 +487,34 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     var code  = 0
     var extra = 0
     if (last_lit != 0) {
-      do {
-        dist = ((pending_buf(d_buf + lx * 2) << 8) & 0xff00) | (pending_buf(d_buf + lx * 2 + 1) & 0xff)
-        lc = l_buf(lx) & 0xff; lx += 1
-        if (dist == 0) {
-          send_code(lc, ltree)
-        } else {
-          code = Tree._length_code(lc) & 0xff
-          send_code(code + LITERALS + 1, ltree)
-          extra = Tree.extra_lbits(code)
-          if (extra != 0) {
-            val lcr = lc - Tree.base_length(code)
-            send_bits(lcr, extra)
+      ;
+      {
+        var continueLoop_16931 = true;
+        while (continueLoop_16931) {
+          dist = ((pending_buf(d_buf + lx * 2) << 8) & 0xff00) | (pending_buf(d_buf + lx * 2 + 1) & 0xff)
+          lc = l_buf(lx) & 0xff; lx += 1
+          if (dist == 0) {
+            send_code(lc, ltree)
+          } else {
+            code = Tree._length_code(lc) & 0xff
+            send_code(code + LITERALS + 1, ltree)
+            extra = Tree.extra_lbits(code)
+            if (extra != 0) {
+              val lcr = lc - Tree.base_length(code)
+              send_bits(lcr, extra)
+            }
+            val dd = dist - 1
+            code = Tree.d_code(dd)
+            send_code(code, dtree)
+            extra = Tree.extra_dbits(code)
+            if (extra != 0) {
+              val dr = dd - Tree.base_dist(code)
+              send_bits(dr, extra)
+            }
           }
-          val dd = dist - 1
-          code = Tree.d_code(dd)
-          send_code(code, dtree)
-          extra = Tree.extra_dbits(code)
-          if (extra != 0) {
-            val dr = dd - Tree.base_dist(code)
-            send_bits(dr, extra)
-          }
+          continueLoop_16931 = lx < last_lit
         }
-      } while (lx < last_lit)
+      }
     }
     send_code(END_BLOCK, ltree)
     last_eob_len = ltree(END_BLOCK * 2 + 1)
@@ -506,28 +524,28 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     var n          = 0
     var ascii_freq = 0
     var bin_freq   = 0
-    while (n < 7)        { bin_freq   += dyn_ltree(n * 2); n += 1 }
-    while (n < 128)      { ascii_freq += dyn_ltree(n * 2); n += 1 }
-    while (n < LITERALS) { bin_freq   += dyn_ltree(n * 2); n += 1 }
+    while (n < 7) { bin_freq += dyn_ltree(n * 2); n += 1 }
+    while (n < 128) { ascii_freq += dyn_ltree(n * 2); n += 1 }
+    while (n < LITERALS) { bin_freq += dyn_ltree(n * 2); n += 1 }
     data_type = (if (bin_freq > (ascii_freq >>> 2)) Z_BINARY else Z_ASCII).toByte
   }
 
   @inline private[jzlib] def bi_flush(): Unit = {
     if (bi_valid == 16) {
       put_short(bi_buf)
-      bi_buf   = 0
+      bi_buf = 0
       bi_valid = 0
     } else if (bi_valid >= 8) {
       put_byte(bi_buf.toByte)
-      bi_buf   = (bi_buf >>> 8).toShort
+      bi_buf = (bi_buf >>> 8).toShort
       bi_valid -= 8
     }
   }
 
   private[jzlib] def bi_windup(): Unit = {
-    if (bi_valid > 8)      { put_short(bi_buf) }
+    if (bi_valid > 8) { put_short(bi_buf) }
     else if (bi_valid > 0) { put_byte(bi_buf.toByte) }
-    bi_buf   = 0
+    bi_buf = 0
     bi_valid = 0
   }
 
@@ -550,7 +568,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
   private[jzlib] def deflate_stored(flush: Int): Int = {
     var max_block_size = 0xffff
     if (max_block_size > pending_buf_size - 5) { max_block_size = pending_buf_size - 5 }
-    var loop = true
+    var loop           = true
     while (loop) {
       if (lookahead <= 1) {
         fill_window()
@@ -563,7 +581,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
         val max_start = block_start + max_block_size
         if (strstart == 0 || strstart >= max_start) {
           lookahead = strstart - max_start
-          strstart  = max_start
+          strstart = max_start
           flush_block_only(false)
           if (strm.avail_out == 0) return NeedMore
         }
@@ -593,11 +611,11 @@ private[jzlib] final class Deflate(var strm: ZStream) {
       l_desc.build_tree(this)
       d_desc.build_tree(this)
       max_blindex = build_bl_tree()
-      opt_lenb    = (opt_len + 3 + 7) >>> 3
+      opt_lenb = (opt_len + 3 + 7) >>> 3
       static_lenb = (static_len + 3 + 7) >>> 3
       if (static_lenb <= opt_lenb || strategy == Z_FIXED) opt_lenb = static_lenb
     } else {
-      opt_lenb    = stored_len + 5
+      opt_lenb = stored_len + 5
       static_lenb = stored_len + 5
     }
     if (stored_len + 4 <= opt_lenb && buf != -1) {
@@ -616,48 +634,60 @@ private[jzlib] final class Deflate(var strm: ZStream) {
 
   private[jzlib] def slide_hash(): Unit = {
     var n = hash_size
-    var p = n
-    do {
-      p -= 1
-      val m = head(p) & 0xffff
-      head(p) = (if (m >= w_size) (m - w_size).toShort else 0)
-      n -= 1
-    } while (n != 0)
+    var p = n;
+    {
+      var continueLoop_21633 = true;
+      while (continueLoop_21633) {
+        p -= 1
+        val m = head(p) & 0xffff
+        head(p) = if (m >= w_size) (m - w_size).toShort else 0
+        n -= 1
+        continueLoop_21633 = n != 0
+      }
+    }
     n = w_size
-    p = n
-    do {
-      p -= 1
-      val m = prev(p) & 0xffff
-      prev(p) = (if (m >= w_size) (m - w_size).toShort else 0)
-      n -= 1
-    } while (n != 0)
+    p = n;
+    {
+      var continueLoop_21873 = true;
+      while (continueLoop_21873) {
+        p -= 1
+        val m = prev(p) & 0xffff
+        prev(p) = if (m >= w_size) (m - w_size).toShort else 0
+        n -= 1
+        continueLoop_21873 = n != 0
+      }
+    }
   }
 
   private[jzlib] def fill_window(): Unit = {
     var n    = 0
-    var more = 0
-    do {
-      more = window_size - lookahead - strstart
-      if (more == 0 && strstart == 0 && lookahead == 0) { more = w_size }
-      else if (more == -1) { more -= 1 }
-      else if (strstart >= w_size + w_size - MIN_LOOKAHEAD) {
-        System.arraycopy(window, w_size, window, 0, w_size)
-        match_start -= w_size
-        strstart    -= w_size
-        block_start -= w_size
-        if (level > 0) {
-          slide_hash()
+    var more = 0;
+    {
+      var continueLoop_22172 = true;
+      while (continueLoop_22172) {
+        more = window_size - lookahead - strstart
+        if (more == 0 && strstart == 0 && lookahead == 0) { more = w_size }
+        else if (more == -1) { more -= 1 }
+        else if (strstart >= w_size + w_size - MIN_LOOKAHEAD) {
+          System.arraycopy(window, w_size, window, 0, w_size)
+          match_start -= w_size
+          strstart -= w_size
+          block_start -= w_size
+          if (level > 0) {
+            slide_hash()
+          }
+          more += w_size
         }
-        more += w_size
+        if (strm.avail_in == 0) return
+          n = strm.read_buf(window, strstart + lookahead, more)
+          lookahead += n
+          if (lookahead >= MIN_MATCH) {
+            ins_h = window(strstart) & 0xff
+            ins_h = ((ins_h << hash_shift) ^ (window(strstart + 1) & 0xff)) & hash_mask
+          }
+        continueLoop_22172 = lookahead < MIN_LOOKAHEAD && strm.avail_in != 0
       }
-      if (strm.avail_in == 0) return
-      n = strm.read_buf(window, strstart + lookahead, more)
-      lookahead += n
-      if (lookahead >= MIN_MATCH) {
-        ins_h = window(strstart) & 0xff
-        ins_h = (((ins_h) << hash_shift) ^ (window(strstart + 1) & 0xff)) & hash_mask
-      }
-    } while (lookahead < MIN_LOOKAHEAD && strm.avail_in != 0)
+    }
   }
 
   private[jzlib] def deflate_fast(flush: Int): Int = {
@@ -672,7 +702,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
       }
       if (loop) {
         if (lookahead >= MIN_MATCH) {
-          ins_h = (((ins_h) << hash_shift) ^ (window(strstart + (MIN_MATCH - 1)) & 0xff)) & hash_mask
+          ins_h = ((ins_h << hash_shift) ^ (window(strstart + (MIN_MATCH - 1)) & 0xff)) & hash_mask
           hash_head = head(ins_h) & 0xffff
           prev(strstart & w_mask) = head(ins_h)
           head(ins_h) = strstart.toShort
@@ -684,26 +714,30 @@ private[jzlib] final class Deflate(var strm: ZStream) {
           bflush = _tr_tally(strstart - match_start, match_length - MIN_MATCH)
           lookahead -= match_length
           if (match_length <= max_lazy_match && lookahead >= MIN_MATCH) {
-            match_length -= 1
-            do {
-              strstart += 1
-              ins_h = ((ins_h << hash_shift) ^ (window(strstart + (MIN_MATCH - 1)) & 0xff)) & hash_mask
-              hash_head = head(ins_h) & 0xffff
-              prev(strstart & w_mask) = head(ins_h)
-              head(ins_h) = strstart.toShort
-              match_length -= 1
-            } while (match_length != 0)
+            match_length -= 1;
+            {
+              var continueLoop_24161 = true;
+              while (continueLoop_24161) {
+                strstart += 1
+                ins_h = ((ins_h << hash_shift) ^ (window(strstart + (MIN_MATCH - 1)) & 0xff)) & hash_mask
+                hash_head = head(ins_h) & 0xffff
+                prev(strstart & w_mask) = head(ins_h)
+                head(ins_h) = strstart.toShort
+                match_length -= 1
+                continueLoop_24161 = match_length != 0
+              }
+            }
             strstart += 1
           } else {
-            strstart     += match_length
-            match_length  = 0
-            ins_h         = window(strstart) & 0xff
-            ins_h = (((ins_h) << hash_shift) ^ (window(strstart + 1) & 0xff)) & hash_mask
+            strstart += match_length
+            match_length = 0
+            ins_h = window(strstart) & 0xff
+            ins_h = ((ins_h << hash_shift) ^ (window(strstart + 1) & 0xff)) & hash_mask
           }
         } else {
           bflush = _tr_tally(0, window(strstart) & 0xff)
           lookahead -= 1
-          strstart  += 1
+          strstart += 1
         }
         if (bflush) {
           flush_block_only(false)
@@ -731,40 +765,48 @@ private[jzlib] final class Deflate(var strm: ZStream) {
       }
       if (loop) {
         if (lookahead >= MIN_MATCH) {
-          ins_h = (((ins_h) << hash_shift) ^ (window(strstart + (MIN_MATCH - 1)) & 0xff)) & hash_mask
+          ins_h = ((ins_h << hash_shift) ^ (window(strstart + (MIN_MATCH - 1)) & 0xff)) & hash_mask
           hash_head = head(ins_h) & 0xffff
           prev(strstart & w_mask) = head(ins_h)
           head(ins_h) = strstart.toShort
         }
-        prev_length  = match_length
-        prev_match   = match_start
+        prev_length = match_length
+        prev_match = match_start
         match_length = MIN_MATCH - 1
-        if (hash_head != 0 && prev_length < max_lazy_match &&
-            ((strstart - hash_head) & 0xffff) <= w_size - MIN_LOOKAHEAD) {
+        if (
+          hash_head != 0 && prev_length < max_lazy_match &&
+          ((strstart - hash_head) & 0xffff) <= w_size - MIN_LOOKAHEAD
+        ) {
           if (strategy != Z_HUFFMAN_ONLY) { match_length = longest_match(hash_head) }
-          if (match_length <= 5 && (strategy == Z_FILTERED ||
-              (match_length == MIN_MATCH && strstart - match_start > 4096))) {
+          if (
+            match_length <= 5 && (strategy == Z_FILTERED ||
+              (match_length == MIN_MATCH && strstart - match_start > 4096))
+          ) {
             match_length = MIN_MATCH - 1
           }
         }
         if (prev_length >= MIN_MATCH && match_length <= prev_length) {
           val max_insert = strstart + lookahead - MIN_MATCH
           bflush = _tr_tally(strstart - 1 - prev_match, prev_length - MIN_MATCH)
-          lookahead    -= prev_length - 1
-          prev_length  -= 2
-          do {
-            strstart += 1
-            if (strstart <= max_insert) {
-              ins_h = (((ins_h) << hash_shift) ^ (window(strstart + (MIN_MATCH - 1)) & 0xff)) & hash_mask
-              hash_head = head(ins_h) & 0xffff
-              prev(strstart & w_mask) = head(ins_h)
-              head(ins_h) = strstart.toShort
+          lookahead -= prev_length - 1
+          prev_length -= 2;
+          {
+            var continueLoop_26776 = true;
+            while (continueLoop_26776) {
+              strstart += 1
+              if (strstart <= max_insert) {
+                ins_h = ((ins_h << hash_shift) ^ (window(strstart + (MIN_MATCH - 1)) & 0xff)) & hash_mask
+                hash_head = head(ins_h) & 0xffff
+                prev(strstart & w_mask) = head(ins_h)
+                head(ins_h) = strstart.toShort
+              }
+              prev_length -= 1
+              continueLoop_26776 = prev_length != 0
             }
-            prev_length -= 1
-          } while (prev_length != 0)
+          }
           match_available = 0
-          match_length    = MIN_MATCH - 1
-          strstart       += 1
+          match_length = MIN_MATCH - 1
+          strstart += 1
           if (bflush) {
             flush_block_only(false)
             if (strm.avail_out == 0) return NeedMore
@@ -772,13 +814,13 @@ private[jzlib] final class Deflate(var strm: ZStream) {
         } else if (match_available != 0) {
           bflush = _tr_tally(0, window(strstart - 1) & 0xff)
           if (bflush) { flush_block_only(false) }
-          strstart  += 1
+          strstart += 1
           lookahead -= 1
           if (strm.avail_out == 0) return NeedMore
         } else {
           match_available = 1
-          strstart       += 1
-          lookahead      -= 1
+          strstart += 1
+          lookahead -= 1
         }
       }
     }
@@ -812,38 +854,38 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     var break_outer  = false
     while (!break_outer) {
       mtch = cur
-      if (window(mtch + best_len)     != scan_end  ||
-          window(mtch + best_len - 1) != scan_end1 ||
-          window(mtch)                != window(scan) ||
-          { mtch += 1; window(mtch) } != window(scan + 1)) {
+      if (
+        window(mtch + best_len) != scan_end ||
+        window(mtch + best_len - 1) != scan_end1 ||
+        window(mtch) != window(scan) || { mtch += 1; window(mtch) } != window(scan + 1)
+      ) {
         // continue: skip to condition
       } else {
         scan += 2; mtch += 1
-        do {} while (
-          { scan += 1; mtch += 1; window(scan) == window(mtch) } &&
-          { scan += 1; mtch += 1; window(scan) == window(mtch) } &&
-          { scan += 1; mtch += 1; window(scan) == window(mtch) } &&
-          { scan += 1; mtch += 1; window(scan) == window(mtch) } &&
-          { scan += 1; mtch += 1; window(scan) == window(mtch) } &&
-          { scan += 1; mtch += 1; window(scan) == window(mtch) } &&
-          { scan += 1; mtch += 1; window(scan) == window(mtch) } &&
-          { scan += 1; mtch += 1; window(scan) == window(mtch) } &&
-          scan < strend
-        )
-        len  = MAX_MATCH - (strend - scan)
+        while ({ scan += 1; mtch += 1; window(scan) == window(mtch) } && {
+          scan += 1; mtch += 1; window(scan) == window(mtch)
+        } && { scan += 1; mtch += 1; window(scan) == window(mtch) } && {
+          scan += 1; mtch += 1; window(scan) == window(mtch)
+        } && { scan += 1; mtch += 1; window(scan) == window(mtch) } && {
+          scan += 1; mtch += 1; window(scan) == window(mtch)
+        } && { scan += 1; mtch += 1; window(scan) == window(mtch) } && {
+          scan += 1; mtch += 1; window(scan) == window(mtch)
+        } &&
+        scan < strend) {}
+        len = MAX_MATCH - (strend - scan)
         scan = strend - MAX_MATCH
         if (len > best_len) {
           match_start = cur
-          best_len    = len
+          best_len = len
           if (len >= nm) { break_outer = true }
           else {
             scan_end1 = window(scan + best_len - 1)
-            scan_end  = window(scan + best_len)
+            scan_end = window(scan + best_len)
           }
         }
       }
       if (!break_outer) {
-        cur          = prev(cur & wmask) & 0xffff
+        cur = prev(cur & wmask) & 0xffff
         chain_length -= 1
         if (!(cur > limit && chain_length != 0)) break_outer = true
       }
@@ -861,52 +903,54 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     deflateInit(level, MAX_WBITS)
 
   private def deflateInit(level: Int, method: Int, windowBits: Int, memLevel: Int, strategy: Int): Int = {
-    var wrap        = 1
-    var wb          = windowBits
-    var lvl         = level
+    var wrap = 1
+    var wb   = windowBits
+    var lvl  = level
     strm.msg = null
     if (lvl == Z_DEFAULT_COMPRESSION) lvl = 6
     if (wb < 0) { wrap = 0; wb = -wb }
     else if (wb > 15) { wrap = 2; wb -= 16; strm.adler = new CRC32() }
-    if (memLevel < 1 || memLevel > MAX_MEM_LEVEL || method != Z_DEFLATED ||
-        wb < 8 || wb > 15 || lvl < 0 || lvl > 9 ||
-        strategy < 0 || strategy > Z_FIXED ||
-        (wb == 8 && wrap != 1)) {
+    if (
+      memLevel < 1 || memLevel > MAX_MEM_LEVEL || method != Z_DEFLATED ||
+      wb < 8 || wb > 15 || lvl < 0 || lvl > 9 ||
+      strategy < 0 || strategy > Z_FIXED ||
+      (wb == 8 && wrap != 1)
+    ) {
       return Z_STREAM_ERROR
     }
     if (wb == 8) wb = 9 // upgrade 256-byte window to 512 (zlib wrapper signals this)
-    strm.dstate       = this
-    this.wrap         = wrap
-    w_bits            = wb
-    w_size            = 1 << w_bits
-    w_mask            = w_size - 1
-    hash_bits         = memLevel + 7
-    hash_size         = 1 << hash_bits
-    hash_mask         = hash_size - 1
-    hash_shift        = (hash_bits + MIN_MATCH - 1) / MIN_MATCH
-    window            = new Array[Byte](w_size * 2)
-    prev              = new Array[Short](w_size)
-    head              = new Array[Short](hash_size)
-    lit_bufsize       = 1 << (memLevel + 6)
-    pending_buf       = new Array[Byte](lit_bufsize * 3)
-    pending_buf_size  = lit_bufsize * 3
-    d_buf             = lit_bufsize
-    l_buf             = new Array[Byte](lit_bufsize)
-    this.level        = lvl
-    this.strategy     = strategy
-    this.method       = method.toByte
+    strm.dstate = this
+    this.wrap = wrap
+    w_bits = wb
+    w_size = 1 << w_bits
+    w_mask = w_size - 1
+    hash_bits = memLevel + 7
+    hash_size = 1 << hash_bits
+    hash_mask = hash_size - 1
+    hash_shift = (hash_bits + MIN_MATCH - 1) / MIN_MATCH
+    window = new Array[Byte](w_size * 2)
+    prev = new Array[Short](w_size)
+    head = new Array[Short](hash_size)
+    lit_bufsize = 1 << (memLevel + 6)
+    pending_buf = new Array[Byte](lit_bufsize * 3)
+    pending_buf_size = lit_bufsize * 3
+    d_buf = lit_bufsize
+    l_buf = new Array[Byte](lit_bufsize)
+    this.level = lvl
+    this.strategy = strategy
+    this.method = method.toByte
     deflateReset()
   }
 
   private[jzlib] def deflateReset(): Int = {
-    strm.total_in  = 0
+    strm.total_in = 0
     strm.total_out = 0
-    strm.msg       = null
+    strm.msg = null
     strm.data_type = Z_UNKNOWN
-    pending        = 0
-    pending_out    = 0
+    pending = 0
+    pending_out = 0
     if (wrap < 0) { wrap = -wrap }
-    status     = if (wrap == 0) BUSY_STATE else INIT_STATE
+    status = if (wrap == 0) BUSY_STATE else INIT_STATE
     strm.adler.reset()
     last_flush = -2
     tr_init()
@@ -925,12 +969,12 @@ private[jzlib] final class Deflate(var strm: ZStream) {
       (sourceLen >> 11) + 7
 
     // compute wrapper length; use |wrap| to handle negative wrap after Z_STREAM_END
-    val wrapAbs = if (wrap < 0) -wrap else wrap
+    val wrapAbs       = if (wrap < 0) -wrap else wrap
     val wraplen: Long = wrapAbs match {
       case 0 => 0L // raw deflate
       case 1 =>    // zlib wrapper
         6L + (if (strstart != 0) 4L else 0L)
-      case 2 => // gzip wrapper
+      case 2 =>    // gzip wrapper
         var wl = 18L
         if (gheader != null) {
           if (gheader.extra != null)
@@ -972,8 +1016,10 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     if (lv < 0 || lv > 9 || _strategy < 0 || _strategy > Z_FIXED) {
       return Z_STREAM_ERROR
     }
-    if ((strategy != _strategy || config_table(level).func != config_table(lv).func) &&
-        last_flush != -2) {
+    if (
+      (strategy != _strategy || config_table(level).func != config_table(lv).func) &&
+      last_flush != -2
+    ) {
       err = strm.deflate(Z_PARTIAL_FLUSH)
       if (err == Z_STREAM_ERROR) return err
       if (strm.avail_in != 0 || (strstart - block_start) + lookahead != 0)
@@ -985,10 +1031,10 @@ private[jzlib] final class Deflate(var strm: ZStream) {
         var i = 0
         while (i < hash_size) { head(i) = 0; i += 1 }
       }
-      level            = lv
-      max_lazy_match   = config_table(level).max_lazy
-      good_match       = config_table(level).good_length
-      nice_match       = config_table(level).nice_length
+      level = lv
+      max_lazy_match = config_table(level).max_lazy
+      good_match = config_table(level).good_length
+      nice_match = config_table(level).nice_length
       max_chain_length = config_table(level).max_chain
     }
     strategy = _strategy
@@ -1003,13 +1049,13 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     if (length < MIN_MATCH) return Z_OK
     if (length > w_size - MIN_LOOKAHEAD) { length = w_size - MIN_LOOKAHEAD; index = dictLength - length }
     System.arraycopy(dictionary, index, window, 0, length)
-    strstart    = length
+    strstart = length
     block_start = length
-    ins_h       = window(0) & 0xff
-    ins_h = (((ins_h) << hash_shift) ^ (window(1) & 0xff)) & hash_mask
-    var n = 0
+    ins_h = window(0) & 0xff
+    ins_h = ((ins_h << hash_shift) ^ (window(1) & 0xff)) & hash_mask
+    var n      = 0
     while (n <= length - MIN_MATCH) {
-      ins_h = (((ins_h) << hash_shift) ^ (window(n + (MIN_MATCH - 1)) & 0xff)) & hash_mask
+      ins_h = ((ins_h << hash_shift) ^ (window(n + (MIN_MATCH - 1)) & 0xff)) & hash_mask
       prev(n & w_mask) = head(ins_h)
       head(ins_h) = n.toShort
       n += 1
@@ -1033,16 +1079,18 @@ private[jzlib] final class Deflate(var strm: ZStream) {
   private[jzlib] def deflate(flush: Int): Int = {
     var old_flush = 0
     if (flush > Z_FINISH || flush < 0) { return Z_STREAM_ERROR }
-    if (strm.next_out == null || (strm.next_in == null && strm.avail_in != 0) ||
-        (status == FINISH_STATE && flush != Z_FINISH)) {
-      strm.msg = z_errmsg(Z_NEED_DICT - (Z_STREAM_ERROR))
+    if (
+      strm.next_out == null || (strm.next_in == null && strm.avail_in != 0) ||
+      (status == FINISH_STATE && flush != Z_FINISH)
+    ) {
+      strm.msg = z_errmsg(Z_NEED_DICT - Z_STREAM_ERROR)
       return Z_STREAM_ERROR
     }
     if (strm.avail_out == 0) {
-      strm.msg = z_errmsg(Z_NEED_DICT - (Z_BUF_ERROR))
+      strm.msg = z_errmsg(Z_NEED_DICT - Z_BUF_ERROR)
       return Z_BUF_ERROR
     }
-    old_flush  = last_flush
+    old_flush = last_flush
     last_flush = flush
     if (status == INIT_STATE) {
       if (wrap == 2) {
@@ -1050,7 +1098,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
         status = BUSY_STATE
         strm.adler.reset()
       } else {
-        var header = (Z_DEFLATED + ((w_bits - 8) << 4)) << 8
+        var header      = (Z_DEFLATED + ((w_bits - 8) << 4)) << 8
         var level_flags = ((level - 1) & 0xff) >> 1
         if (level_flags > 3) level_flags = 3
         header |= (level_flags << 6)
@@ -1073,15 +1121,17 @@ private[jzlib] final class Deflate(var strm: ZStream) {
         return Z_OK
       }
     } else if (strm.avail_in == 0 && flush <= old_flush && flush != Z_FINISH) {
-      strm.msg = z_errmsg(Z_NEED_DICT - (Z_BUF_ERROR))
+      strm.msg = z_errmsg(Z_NEED_DICT - Z_BUF_ERROR)
       return Z_BUF_ERROR
     }
     if (status == FINISH_STATE && strm.avail_in != 0) {
-      strm.msg = z_errmsg(Z_NEED_DICT - (Z_BUF_ERROR))
+      strm.msg = z_errmsg(Z_NEED_DICT - Z_BUF_ERROR)
       return Z_BUF_ERROR
     }
-    if (strm.avail_in != 0 || lookahead != 0 ||
-        (flush != Z_NO_FLUSH && status != FINISH_STATE)) {
+    if (
+      strm.avail_in != 0 || lookahead != 0 ||
+      (flush != Z_NO_FLUSH && status != FINISH_STATE)
+    ) {
       var bstate = -1
       config_table(level).func match {
         case STORED => bstate = deflate_stored(flush)
@@ -1115,11 +1165,11 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     if (wrap == 2) {
       val adler = strm.adler.getValue
       put_byte((adler & 0xff).toByte)
-      put_byte(((adler >> 8)  & 0xff).toByte)
+      put_byte(((adler >> 8) & 0xff).toByte)
       put_byte(((adler >> 16) & 0xff).toByte)
       put_byte(((adler >> 24) & 0xff).toByte)
       put_byte((strm.total_in & 0xff).toByte)
-      put_byte(((strm.total_in >> 8)  & 0xff).toByte)
+      put_byte(((strm.total_in >> 8) & 0xff).toByte)
       put_byte(((strm.total_in >> 16) & 0xff).toByte)
       put_byte(((strm.total_in >> 24) & 0xff).toByte)
       getGZIPHeader().setCRC(adler)
@@ -1135,76 +1185,76 @@ private[jzlib] final class Deflate(var strm: ZStream) {
 
   private[jzlib] def copy(): Deflate = {
     val dest = new Deflate(this.strm)
-    dest.status           = this.status
+    dest.status = this.status
     dest.pending_buf_size = this.pending_buf_size
-    dest.pending_out      = this.pending_out
-    dest.pending          = this.pending
-    dest.wrap             = this.wrap
-    dest.data_type        = this.data_type
-    dest.method           = this.method
-    dest.last_flush       = this.last_flush
-    dest.w_size           = this.w_size
-    dest.w_bits           = this.w_bits
-    dest.w_mask           = this.w_mask
-    dest.window_size      = this.window_size
-    dest.ins_h            = this.ins_h
-    dest.hash_size        = this.hash_size
-    dest.hash_bits        = this.hash_bits
-    dest.hash_mask        = this.hash_mask
-    dest.hash_shift       = this.hash_shift
-    dest.block_start      = this.block_start
-    dest.match_length     = this.match_length
-    dest.prev_match       = this.prev_match
-    dest.match_available  = this.match_available
-    dest.strstart         = this.strstart
-    dest.match_start      = this.match_start
-    dest.lookahead        = this.lookahead
-    dest.prev_length      = this.prev_length
+    dest.pending_out = this.pending_out
+    dest.pending = this.pending
+    dest.wrap = this.wrap
+    dest.data_type = this.data_type
+    dest.method = this.method
+    dest.last_flush = this.last_flush
+    dest.w_size = this.w_size
+    dest.w_bits = this.w_bits
+    dest.w_mask = this.w_mask
+    dest.window_size = this.window_size
+    dest.ins_h = this.ins_h
+    dest.hash_size = this.hash_size
+    dest.hash_bits = this.hash_bits
+    dest.hash_mask = this.hash_mask
+    dest.hash_shift = this.hash_shift
+    dest.block_start = this.block_start
+    dest.match_length = this.match_length
+    dest.prev_match = this.prev_match
+    dest.match_available = this.match_available
+    dest.strstart = this.strstart
+    dest.match_start = this.match_start
+    dest.lookahead = this.lookahead
+    dest.prev_length = this.prev_length
     dest.max_chain_length = this.max_chain_length
-    dest.max_lazy_match   = this.max_lazy_match
-    dest.level            = this.level
-    dest.strategy         = this.strategy
-    dest.good_match       = this.good_match
-    dest.nice_match       = this.nice_match
-    dest.heap_len         = this.heap_len
-    dest.heap_max         = this.heap_max
-    dest.lit_bufsize      = this.lit_bufsize
-    dest.last_lit         = this.last_lit
-    dest.d_buf            = this.d_buf
-    dest.opt_len          = this.opt_len
-    dest.static_len       = this.static_len
-    dest.matches          = this.matches
-    dest.last_eob_len     = this.last_eob_len
-    dest.bi_buf           = this.bi_buf
-    dest.bi_valid         = this.bi_valid
-    dest.pending_buf  = dup(this.pending_buf)
-    dest.l_buf        = dup(this.l_buf)
-    dest.window       = dup(this.window)
-    dest.prev         = dup(this.prev)
-    dest.head         = dup(this.head)
-    dest.dyn_ltree    = dup(this.dyn_ltree)
-    dest.dyn_dtree    = dup(this.dyn_dtree)
-    dest.bl_tree      = dup(this.bl_tree)
-    dest.bl_count     = dup(this.bl_count)
-    dest.next_code    = dup(this.next_code)
-    dest.heap         = dup(this.heap)
-    dest.depth        = dup(this.depth)
-    dest.l_desc.dyn_tree   = dest.dyn_ltree
-    dest.l_desc.stat_desc  = this.l_desc.stat_desc
-    dest.l_desc.max_code   = this.l_desc.max_code
-    dest.d_desc.dyn_tree   = dest.dyn_dtree
-    dest.d_desc.stat_desc  = this.d_desc.stat_desc
-    dest.d_desc.max_code   = this.d_desc.max_code
-    dest.bl_desc.dyn_tree  = dest.bl_tree
+    dest.max_lazy_match = this.max_lazy_match
+    dest.level = this.level
+    dest.strategy = this.strategy
+    dest.good_match = this.good_match
+    dest.nice_match = this.nice_match
+    dest.heap_len = this.heap_len
+    dest.heap_max = this.heap_max
+    dest.lit_bufsize = this.lit_bufsize
+    dest.last_lit = this.last_lit
+    dest.d_buf = this.d_buf
+    dest.opt_len = this.opt_len
+    dest.static_len = this.static_len
+    dest.matches = this.matches
+    dest.last_eob_len = this.last_eob_len
+    dest.bi_buf = this.bi_buf
+    dest.bi_valid = this.bi_valid
+    dest.pending_buf = dup(this.pending_buf)
+    dest.l_buf = dup(this.l_buf)
+    dest.window = dup(this.window)
+    dest.prev = dup(this.prev)
+    dest.head = dup(this.head)
+    dest.dyn_ltree = dup(this.dyn_ltree)
+    dest.dyn_dtree = dup(this.dyn_dtree)
+    dest.bl_tree = dup(this.bl_tree)
+    dest.bl_count = dup(this.bl_count)
+    dest.next_code = dup(this.next_code)
+    dest.heap = dup(this.heap)
+    dest.depth = dup(this.depth)
+    dest.l_desc.dyn_tree = dest.dyn_ltree
+    dest.l_desc.stat_desc = this.l_desc.stat_desc
+    dest.l_desc.max_code = this.l_desc.max_code
+    dest.d_desc.dyn_tree = dest.dyn_dtree
+    dest.d_desc.stat_desc = this.d_desc.stat_desc
+    dest.d_desc.max_code = this.d_desc.max_code
+    dest.bl_desc.dyn_tree = dest.bl_tree
     dest.bl_desc.stat_desc = this.bl_desc.stat_desc
-    dest.bl_desc.max_code  = this.bl_desc.max_code
+    dest.bl_desc.max_code = this.bl_desc.max_code
     if (this.gheader != null) {
       dest.gheader = this.gheader.clone()
     }
     dest
   }
 
-  private def dup(buf: Array[Byte]): Array[Byte] = {
+  private def dup(buf: Array[Byte]): Array[Byte]   = {
     val foo = new Array[Byte](buf.length)
     System.arraycopy(buf, 0, foo, 0, foo.length)
     foo
@@ -1214,7 +1264,7 @@ private[jzlib] final class Deflate(var strm: ZStream) {
     System.arraycopy(buf, 0, foo, 0, foo.length)
     foo
   }
-  private def dup(buf: Array[Int]): Array[Int] = {
+  private def dup(buf: Array[Int]): Array[Int]     = {
     val foo = new Array[Int](buf.length)
     System.arraycopy(buf, 0, foo, 0, foo.length)
     foo
