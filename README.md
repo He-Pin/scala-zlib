@@ -530,7 +530,7 @@ Pre-built native binaries are available as GitHub Release assets.
 
 1. **Maven Central Publishing** — Automatic when a GitHub Release is created
 2. **GitHub Release Assets** — JARs + native CLI binaries uploaded automatically
-3. **Native Binary Platforms** — Linux x86_64, macOS aarch64, Windows x86_64
+3. **Native Binary Platforms** — Linux x86_64, macOS x86_64, macOS aarch64 (Apple Silicon), Windows x86_64
 
 ### How to Create a Release
 
@@ -554,7 +554,8 @@ git push origin v1.1.5
 | `scala-zlib_2.13-1.1.5.jar` | Core library for Scala 2.13 |
 | `scala-zlib_3-1.1.5.jar` | Core library for Scala 3 |
 | `gzip-linux-x86_64` | Native gzip binary for Linux |
-| `gzip-macos-aarch64` | Native gzip binary for macOS ARM |
+| `gzip-macos-x86_64` | Native gzip binary for macOS Intel |
+| `gzip-macos-aarch64` | Native gzip binary for macOS Apple Silicon |
 | `gzip-windows-x86_64.exe` | Native gzip binary for Windows |
 | (same pattern for gunzip and pigz) | |
 
