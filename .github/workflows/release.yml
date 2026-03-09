@@ -69,6 +69,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: test
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -123,9 +124,14 @@ jobs:
           key: mill-native-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
       - name: Build native binaries
         run: |
-          ./mill gzipNative[2.13.16].nativeLink
-          ./mill gunzipNative[2.13.16].nativeLink
-          ./mill pigzNative[2.13.16].nativeLink
+          if [ "${{ matrix.os_name }}" = "windows" ]; then
+            MILL="./mill.bat"
+          else
+            MILL="./mill"
+          fi
+          $MILL gzipNative[2.13.16].nativeLink
+          $MILL gunzipNative[2.13.16].nativeLink
+          $MILL pigzNative[2.13.16].nativeLink
         shell: bash
       - name: Collect native binaries
         run: |
