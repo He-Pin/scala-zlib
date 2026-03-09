@@ -62,10 +62,17 @@ jobs:
         run: |
           ./mill __.publishArtifacts
 
-  release:
-    name: Build & upload release assets
-    runs-on: ubuntu-latest
-    needs: [test, publish]
+  build-native:
+    name: Build native CLI (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: test
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      ARCH: ${{ runner.arch == 'ARM64' && 'aarch64' || 'x86_64' }}
+      OS_NAME: ${{ matrix.os == 'ubuntu-latest' && 'linux' || (matrix.os == 'macos-latest' && 'macos' || 'windows') }}
+      EXT: ${{ matrix.os == 'windows-latest' && '.exe' || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,9 +81,55 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - uses: actions/setup-node@v4
+      - name: Install Clang / LLVM (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libstdc++-12-dev zlib1g-dev
+      - name: Set up LLVM (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        shell: pwsh
+      - name: Cache Mill
+        uses: actions/cache@v4
         with:
-          node-version: "22"
+          path: |
+            ~/.cache/mill
+            out/
+          key: mill-native-${{ runner.os }}-${{ hashFiles('build.mill', '.mill-version') }}
+      - name: Build native binaries
+        run: |
+          ./mill gzipNative[2.13.16].nativeLink
+          ./mill gunzipNative[2.13.16].nativeLink
+          ./mill pigzNative[2.13.16].nativeLink
+        shell: bash
+      - name: Collect native binaries
+        run: |
+          mkdir -p native-artifacts
+          cp out/gzipNative/2.13.16/nativeLink.dest/out${EXT} native-artifacts/gzip-${OS_NAME}-${ARCH}${EXT}
+          cp out/gunzipNative/2.13.16/nativeLink.dest/out${EXT} native-artifacts/gunzip-${OS_NAME}-${ARCH}${EXT}
+          cp out/pigzNative/2.13.16/nativeLink.dest/out${EXT} native-artifacts/pigz-${OS_NAME}-${ARCH}${EXT}
+          ls -la native-artifacts/
+        shell: bash
+      - name: Upload native artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-binaries-${{ env.OS_NAME }}-${{ env.ARCH }}
+          path: native-artifacts/
+
+  release:
+    name: Upload release assets
+    runs-on: ubuntu-latest
+    needs: [publish, build-native]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
       - name: Cache Mill
         uses: actions/cache@v4
         with:
@@ -90,14 +143,26 @@ jobs:
           ./mill __.jar
           ./mill __.docJar
           ./mill __.sourceJar
-      - name: Collect artifacts
+      - name: Collect JARs
         run: |
           mkdir -p release-artifacts
           find out/ -name "*.jar" -path "*/dest/*" | while read jar; do
             cp "$jar" release-artifacts/
           done
           ls -la release-artifacts/
+      - name: Download native binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts/
+          pattern: native-binaries-*
+          merge-multiple: true
+      - name: List all release assets
+        run: ls -la release-artifacts/
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
-          files: release-artifacts/*.jar
+          files: |
+            release-artifacts/*.jar
+            release-artifacts/gzip-*
+            release-artifacts/gunzip-*
+            release-artifacts/pigz-*
