@@ -90,6 +90,47 @@ object example extends ScalaModule {
   def moduleDeps = Seq(core(scalaVersions.head), jvm(scalaVersions.head))
 }
 
+// ─── CLI Tools ──────────────────────────────────────────────────────────────
+
+object gzip extends ScalaModule with ZlibModule {
+  def scalaVersion = scalaVersions.head
+  def moduleDeps = Seq(core(scalaVersions.head))
+  def mainClass = Some("com.jcraft.jzlib.cli.GzipMain")
+}
+
+object gzipNative extends Cross[GzipNativeModule](scalaVersions)
+trait GzipNativeModule extends CrossScalaModule with ZlibModule with ScalaNativeModule {
+  def scalaNativeVersion = "0.5.10"
+  def moduleDeps = Seq(coreNative(crossScalaVersion))
+  def mainClass = Some("com.jcraft.jzlib.cli.GzipMain")
+}
+
+object gunzip extends ScalaModule with ZlibModule {
+  def scalaVersion = scalaVersions.head
+  def moduleDeps = Seq(core(scalaVersions.head))
+  def mainClass = Some("com.jcraft.jzlib.cli.GunzipMain")
+}
+
+object gunzipNative extends Cross[GunzipNativeModule](scalaVersions)
+trait GunzipNativeModule extends CrossScalaModule with ZlibModule with ScalaNativeModule {
+  def scalaNativeVersion = "0.5.10"
+  def moduleDeps = Seq(coreNative(crossScalaVersion))
+  def mainClass = Some("com.jcraft.jzlib.cli.GunzipMain")
+}
+
+object pigz extends ScalaModule with ZlibModule {
+  def scalaVersion = scalaVersions.head
+  def moduleDeps = Seq(core(scalaVersions.head))
+  def mainClass = Some("com.jcraft.jzlib.cli.PigzMain")
+}
+
+object pigzNative extends Cross[PigzNativeModule](scalaVersions)
+trait PigzNativeModule extends CrossScalaModule with ZlibModule with ScalaNativeModule {
+  def scalaNativeVersion = "0.5.10"
+  def moduleDeps = Seq(coreNative(crossScalaVersion))
+  def mainClass = Some("com.jcraft.jzlib.cli.PigzMain")
+}
+
 // ─── Scala.js ───────────────────────────────────────────────────────────────
 
 object coreJS extends Cross[CoreJsModule](scalaVersions)
